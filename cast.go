@@ -6,7 +6,6 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"os"
 	"strings"
 
 	"golang.org/x/tools/go/ast/astutil"
@@ -16,9 +15,9 @@ import (
 )
 
 // GenerateCastedFile generates a the cast typed contents of a .pb.go file.
-func GenerateCastedFile(gen *protogen.Plugin, file *protogen.File) {
-	filename := "test/" + file.GeneratedFilenamePrefix + ".pb.go"
-
+func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile, file *protogen.File) {
+	filename := file.GeneratedFilenamePrefix + ".pb.go"
+	newGennedFile := gen.NewGeneratedFile(filename, file.GoImportPath)
 	fieldNameToCastType := make(map[string]string)
 	var newImports []string
 	for _, message := range file.Messages {
@@ -77,7 +76,11 @@ func GenerateCastedFile(gen *protogen.Plugin, file *protogen.File) {
 		return true
 	}
 
-	astFile, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
+	bytes, err := gennedFile.Content()
+	if err != nil {
+		panic(err)
+	}
+	astFile, err := parser.ParseFile(fset, "",bytes, parser.ParseComments)
 	if err != nil {
 		panic(err)
 	}
@@ -89,15 +92,8 @@ func GenerateCastedFile(gen *protogen.Plugin, file *protogen.File) {
 
 	result := astutil.Apply(astFile, preFunc, postFunc)
 	resultfile := result.(*ast.File)
-	if err := os.Remove(filename); err != nil {
-		panic(err)
-	}
-	writer, err := os.Create("genned.go")
-	if err != nil {
-		panic(err)
-	}
-	defer writer.Close()
-	if err := printer.Fprint(writer, fset, resultfile); err != nil {
+	gennedFile.Skip()
+	if err := printer.Fprint(newGennedFile, fset, resultfile); err != nil {
 		panic(err)
 	}
 }

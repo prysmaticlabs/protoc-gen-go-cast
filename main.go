@@ -1,14 +1,15 @@
 package main
 
 import (
-"errors"
-"flag"
-"fmt"
-"os"
-"path/filepath"
+	"errors"
+	"flag"
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
 
-gengo "google.golang.org/protobuf/cmd/protoc-gen-go/internal_gengo"
-"google.golang.org/protobuf/compiler/protogen"
+	gengo "google.golang.org/protobuf/cmd/protoc-gen-go/internal_gengo"
+	"google.golang.org/protobuf/compiler/protogen"
 )
 
 func main() {
@@ -26,15 +27,16 @@ func main() {
 		ParamFunc: flags.Set,
 	}.Run(func(gen *protogen.Plugin) error {
 		if *plugins != "" {
-			return errors.New("protoc-gen-gocast: plugins are not supported; use 'protoc --go-grpc_out=...' to generate gRPC")
+			return errors.New("protoc-gen-go-cast: plugins are not supported; use 'protoc --go-grpc_out=...' to generate gRPC")
 		}
 		if *importPrefix != "" {
-			return errors.New("protoc-gen-go: import_prefix is not supported")
+			return errors.New("protoc-gen-go-cast: import_prefix is not supported")
 		}
+		log.Print(os.Args)
 		for _, f := range gen.Files {
 			if f.Generate {
-				gengo.GenerateFile(gen, f)
-				GenerateCastedFile(gen, f)
+				gennedFile := gengo.GenerateFile(gen, f)
+				GenerateCastedFile(gen, gennedFile, f)
 			}
 		}
 		gen.SupportedFeatures = gengo.SupportedFeatures
