@@ -1,0 +1,6 @@
+# IntelliJ
+.idea
+.ijwb
+
+# Compiled binary
+protoc-gen-go-cast
