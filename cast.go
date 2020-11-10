@@ -6,11 +6,11 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"regexp"
 	"strings"
 
 	"golang.org/x/tools/go/ast/astutil"
 	"google.golang.org/protobuf/compiler/protogen"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -18,11 +18,15 @@ import (
 func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile, file *protogen.File) {
 	filename := file.GeneratedFilenamePrefix + ".pb.go"
 	newGennedFile := gen.NewGeneratedFile(filename, file.GoImportPath)
+
 	fieldNameToCastType := make(map[string]string)
 	var newImports []string
 	for _, message := range file.Messages {
 		for _, field := range message.Fields {
-			castType := castTypeFromField(field)
+			castType, err := castTypeFromField(field)
+			if err != nil {
+				panic(err)
+			}
 			if castType == "" {
 				continue
 			}
@@ -36,7 +40,6 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	}
 
 
-	fset := token.NewFileSet()
 	preFunc := func(c *astutil.Cursor) bool {
 		n := c.Node()
 		switch n.(type) {
@@ -80,6 +83,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	if err != nil {
 		panic(err)
 	}
+	fset := token.NewFileSet()
 	astFile, err := parser.ParseFile(fset, "",bytes, parser.ParseComments)
 	if err != nil {
 		panic(err)
@@ -91,17 +95,24 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	}
 
 	result := astutil.Apply(astFile, preFunc, postFunc)
-	resultfile := result.(*ast.File)
+	resultFile := result.(*ast.File)
 	gennedFile.Skip()
-	if err := printer.Fprint(newGennedFile, fset, resultfile); err != nil {
+	if err := printer.Fprint(newGennedFile, fset, resultFile); err != nil {
 		panic(err)
 	}
 }
 
-func castTypeFromField(field *protogen.Field) string {
+func castTypeFromField(field *protogen.Field) (string, error) {
 	options := field.Desc.Options().(*descriptorpb.FieldOptions)
-	result := proto.GetExtension(options, E_CastTypeOption).(string)
-	return result
+	regex, err := regexp.Compile("50000:\"([^\"]*)\"")
+	if err != nil {
+		return "", err
+	}
+	matches := regex.FindStringSubmatch(options.String())
+	if len(matches) != 2 {
+		return "", fmt.Errorf("expected 2 matches, found %d", len(matches))
+	}
+	return matches[1], nil
 }
 
 func castTypeToGoType(castType string) (string, string) {

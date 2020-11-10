@@ -7,12 +7,13 @@ option go_package = "github.com/prysmaticlabs/protoc-gen-go-cast/test";
 import "google/protobuf/descriptor.proto";
 
 extend google.protobuf.FieldOptions {
-  string cast_type_option = 50004;
+  string cast_type_option = 50000;
+  uint64 test_option = 50001;
 }
 
 // TestMessage1 -
 message TestMessage1 {
-  bytes TestString = 1 [(cast_type_option) = "string"];
+  bytes TestString = 1 [(cast_type_option) = "string", (test_option) = 155];
 }
 
 
