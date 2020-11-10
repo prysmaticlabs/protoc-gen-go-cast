@@ -6,8 +6,8 @@ import (
 
 func Test_castTypeToGoType(t *testing.T) {
 	type returns struct {
-	 path string
-	 castType string
+		path string
+		castType string
 	}
 	tests := []struct {
 		name  string
@@ -45,9 +45,6 @@ func Test_castTypeToGoType(t *testing.T) {
 }
 
 func Test_namedImport(t *testing.T) {
-	type args struct {
-		importPath string
-	}
 	tests := []struct {
 		name string
 		importPath string

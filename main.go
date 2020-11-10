@@ -4,7 +4,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -32,7 +31,6 @@ func main() {
 		if *importPrefix != "" {
 			return errors.New("protoc-gen-go-cast: import_prefix is not supported")
 		}
-		log.Print(os.Args)
 		for _, f := range gen.Files {
 			if f.Generate {
 				gennedFile := gengo.GenerateFile(gen, f)
