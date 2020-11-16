@@ -110,7 +110,7 @@ func castTypeFromField(field *protogen.Field) (string, error) {
 	}
 	matches := regex.FindStringSubmatch(options.String())
 	if len(matches) != 2 {
-		return "", fmt.Errorf("expected 2 matches, found %d", len(matches))
+		return "", nil
 	}
 	return matches[1], nil
 }
