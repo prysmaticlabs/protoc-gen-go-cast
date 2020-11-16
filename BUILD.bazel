@@ -1,10 +1,25 @@
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
-load("@bazel_gazelle//:def.bzl", "gazelle")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+load(
+    "@io_bazel_rules_go//proto:compiler.bzl",
+    "go_proto_compiler",
+)
+load(
+    "@io_bazel_rules_go//proto/wkt:well_known_types.bzl",
+    "gen_well_known_types",
+)
+load("@bazel_gazelle//:def.bzl", "gazelle")
 
 # gazelle:prefix github.com/prysmaticlabs/protoc-gen-go-cast
 gazelle(name = "gazelle")
+
+go_proto_compiler(
+    name = "go_cast",
+    #    options = ["plugins=grpc"],
+    visibility = ["//visibility:public"],
+    deps = gen_well_known_types(),
+)
 
 go_library(
     name = "go_default_library",
