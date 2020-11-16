@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/iancoleman/strcase"
 	"golang.org/x/tools/go/ast/astutil"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -34,8 +35,12 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 			if importPath != "" {
 				newImports = append(newImports, importPath)
 			}
+
+			// Mark both in the case its modified in the resulting generation.
 			key := fmt.Sprintf("%s", field.Desc.Name())
+			camelKey := strcase.ToCamel(key)
 			fieldNameToCastType[key] = importedType
+			fieldNameToCastType[camelKey] = importedType
 		}
 	}
 
