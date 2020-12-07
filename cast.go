@@ -24,6 +24,9 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	for path, fileDesc := range gen.FilesByPath {
 		if *file.Proto.Name != path {
 			fileDesc, err := desc.CreateFileDescriptor(fileDesc.Proto)
+			if err != nil && strings.Contains(err.Error(), "no such file") {
+				continue
+			}
 			if err != nil {
 				panic(err)
 			}
