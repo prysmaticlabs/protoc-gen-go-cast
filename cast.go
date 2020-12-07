@@ -6,6 +6,7 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"log"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -23,14 +24,11 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	var deps []*desc.FileDescriptor
 	for path, fileDesc := range gen.FilesByPath {
 		if *file.Proto.Name != path {
-			fileDesc, err := desc.CreateFileDescriptor(fileDesc.Proto)
-			if err != nil && strings.Contains(err.Error(), "no such file") {
-				continue
-			}
+			fD, err := desc.CreateFileDescriptor(fileDesc.Proto)
 			if err != nil {
-				panic(err)
+				log.Fatalf("Could not create descriptor for %s: %v", fileDesc.Proto.Name, err)
 			}
-			deps = append(deps, fileDesc)
+			deps = append(deps, fD)
 		}
 	}
 	fileDesc, err := desc.CreateFileDescriptor(file.Proto, deps...)
