@@ -26,14 +26,15 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 		if *file.Proto.Name != path {
 			fD, err := desc.CreateFileDescriptor(fileDesc.Proto)
 			if err != nil {
-				log.Fatalf("Could not create descriptor for %s: %v", fileDesc.Proto.Name, err)
+				log.Fatalf("Could not create dependency descriptor for %s: %v", fileDesc.Proto.Name, err)
 			}
 			deps = append(deps, fD)
 		}
 	}
+
 	fileDesc, err := desc.CreateFileDescriptor(file.Proto, deps...)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Could not create descriptor for %s: %v", file.Proto.Name, err)
 	}
 
 	fieldNameToCastType := make(map[string]string)
