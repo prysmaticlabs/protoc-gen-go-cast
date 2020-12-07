@@ -44,33 +44,32 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 			if err != nil {
 				panic(err)
 			}
-			if castType == "" {
-				continue
-			}
-			importPath, importedType := castTypeToGoType(castType)
-			if importPath != "" {
-				newImports = append(newImports, importPath)
-			}
+			if castType != "" {
+				importPath, importedType := castTypeToGoType(castType)
+				if importPath != "" {
+					newImports = append(newImports, importPath)
+				}
 
-			// Mark both in the case its modified in the resulting generation.
-			key := fmt.Sprintf("%s", field.Desc.Name())
-			camelKey := strcase.ToCamel(key)
-			fieldNameToCastType[key] = importedType
-			fieldNameToCastType[camelKey] = importedType
+				// Mark both keys in the case its modified in the resulting generation.
+				key := fmt.Sprintf("%s", field.Desc.Name())
+				camelKey := strcase.ToCamel(key)
+				fieldNameToCastType[key] = importedType
+				fieldNameToCastType[camelKey] = importedType
+			}
 
 			structTags, err := structTagsFromField(fileDesc, field)
 			if err != nil {
 				panic(err)
 			}
-			if structTags == "" {
-				continue
+			if structTags != "" {
+				// Mark both keys in the case its modified in the resulting generation.
+				key := fmt.Sprintf("%s", field.Desc.Name())
+				camelKey := strcase.ToCamel(key)
+				key = fmt.Sprintf("%s", field.Desc.Name())
+				camelKey = strcase.ToCamel(key)
+				fieldNameToStructTags[key] = structTags
+				fieldNameToStructTags[camelKey] = structTags
 			}
-
-			// Mark both in the case its modified in the resulting generation.
-			key = fmt.Sprintf("%s", field.Desc.Name())
-			camelKey = strcase.ToCamel(key)
-			fieldNameToStructTags[key] = structTags
-			fieldNameToStructTags[camelKey] = structTags
 		}
 	}
 
@@ -150,19 +149,29 @@ func castTypeFromField(fileDesc *desc.FileDescriptor, field *protogen.Field) (st
 	registry.AddExtensionsFromFile(fileDesc)
 	optionReader := NewOptionReader(registry)
 
-	name := string(field.Desc.Name())
-	parentName := string(field.Parent.Desc.Name())
+	// Find the message for given field.
+	name := string(field.Desc.FullName())
 	var fieldDesc *desc.FieldDescriptor
 	for _, mm := range fileDesc.GetMessageTypes() {
-		if mm.GetName() == parentName {
-			fieldDesc = mm.FindFieldByName(name)
+		for _, ff := range mm.GetFields() {
+			if ff.GetFullyQualifiedName() == name {
+				fieldDesc = ff
+			}
 		}
 	}
-	var value string
-	if err := optionReader.ReadOptionByName(fieldDesc, "v1.cast_type", &value); err != nil {
-		return "", err
+	if fieldDesc == nil {
+		return "", fmt.Errorf("no field found for %s", name)
 	}
-	return value, nil
+
+	value, err := optionReader.GetOptionByName(fieldDesc, fmt.Sprintf("%s.cast_type", fileDesc.GetPackage()))
+	if err == dynamic.ErrUnknownFieldName {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("could not read option by name: %v", err)
+	}
+
+	return value.(string), nil
 }
 
 func structTagsFromField(fileDesc *desc.FileDescriptor, field *protogen.Field) (string, error) {
@@ -172,13 +181,13 @@ func structTagsFromField(fileDesc *desc.FileDescriptor, field *protogen.Field) (
 	optionReader := NewOptionReader(registry)
 
 	// Find the message for given field.
-	name := string(field.Desc.Name())
-	parentName := string(field.Parent.Desc.Name())
+	name := string(field.Desc.FullName())
 	var fieldDesc *desc.FieldDescriptor
 	for _, mm := range fileDesc.GetMessageTypes() {
-		childField := mm.FindFieldByName(name)
-		if mm.GetName() == parentName && childField != nil {
-			fieldDesc = mm.FindFieldByName(name)
+		for _, ff := range mm.GetFields() {
+			if ff.GetFullyQualifiedName() == name {
+				fieldDesc = ff
+			}
 		}
 	}
 	if fieldDesc == nil {
@@ -189,7 +198,6 @@ func structTagsFromField(fileDesc *desc.FileDescriptor, field *protogen.Field) (
 	var allTags string
 	for _, ext := range fileDesc.GetExtensions() {
 		qualifiedName := ext.GetFullyQualifiedName()
-		var value interface{}
 		value, err := optionReader.GetOptionByName(fieldDesc, qualifiedName)
 		if err != nil {
 			return "", err

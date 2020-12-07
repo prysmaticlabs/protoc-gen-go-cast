@@ -7,18 +7,69 @@ option go_package = "github.com/prysmaticlabs/protoc-gen-go-cast/test";
 import "google/protobuf/descriptor.proto";
 
 extend google.protobuf.FieldOptions {
-  string cast_type = 50000;
-  string test = 50001;
-  string test_two = 50002;
+  string ssz_size = 50000;
+  string ssz_max = 50001;
+  string spec_name = 50002;
+  string cast_type = 50003;
 }
 
-// TestMessage1 -
-message TestMessage1 {
-  bytes TestString = 1 [(cast_type) = "string", (test) = "155", (test_two) = "100,100"];
+message Attestation {
+  // A bitfield representation of validator indices that have voted exactly
+  // the same vote and have been aggregated into this attestation.
+  bytes aggregation_bits = 1 [(ssz_max) = "2048", (cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitlist"];
+
+  AttestationData data = 2;
+
+  // 96 byte BLS aggregate signature.
+  bytes signature = 3 [(ssz_size) = "96"];
 }
 
+message AggregateAttestationAndProof {
+  // The aggregator index that submitted this aggregated attestation and proof.
+  uint64 aggregator_index = 1;
 
-// TestMessage1 -
-message TestMessage2 {
-  bytes TestBitfield = 1 [(cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitlist"];
+  // The aggregated attestation that was submitted.
+  Attestation aggregate = 3;
+
+  // 96 byte selection proof signed by the aggregator, which is the signature of the slot to aggregate.
+  bytes selection_proof = 2 [(ssz_size) = "96"];
+}
+
+message SignedAggregateAttestationAndProof {
+  // The aggregated attestation and selection proof itself.
+  AggregateAttestationAndProof message = 1;
+
+  // 96 byte BLS aggregate signature signed by the aggregator over the message.
+  bytes signature = 2 [(ssz_size) = "96"];
+}
+
+message AttestationData {
+  // Attestation data includes information on Casper the Friendly Finality Gadget's votes
+  // See: https://arxiv.org/pdf/1710.09437.pdf
+
+  // Slot of the attestation attesting for.
+  uint64 slot = 1;
+
+  // The committee index that submitted this attestation.
+  uint64 committee_index = 2;
+
+  // 32 byte root of the LMD GHOST block vote.
+  bytes beacon_block_root = 3 [(ssz_size) = "32"];
+
+  // The most recent justified checkpoint in the beacon state
+  Checkpoint source = 4;
+
+  // The checkpoint attempting to be justified for the current epoch and its epoch boundary block
+  Checkpoint target = 5;
+}
+
+message Checkpoint {
+  // A checkpoint is every epoch's first slot. The goal of Casper FFG
+  // is to link the check points together for justification and finalization.
+
+  // Epoch the checkpoint references.
+  uint64 epoch = 1;
+
+  // Block root of the checkpoint references.
+  bytes root = 2 [(ssz_size) = "32"];
 }
