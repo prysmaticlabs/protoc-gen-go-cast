@@ -7,17 +7,18 @@ option go_package = "github.com/prysmaticlabs/protoc-gen-go-cast/test";
 import "google/protobuf/descriptor.proto";
 
 extend google.protobuf.FieldOptions {
-  string cast_type_option = 50000;
-  uint64 test_option = 50001;
+  string cast_type = 50000;
+  string test = 50001;
+  string test_two = 50002;
 }
 
 // TestMessage1 -
 message TestMessage1 {
-  bytes TestString = 1 [(cast_type_option) = "string", (test_option) = 155];
+  bytes TestString = 1 [(cast_type) = "string", (test) = "155", (test_two) = "100,100"];
 }
 
 
 // TestMessage1 -
 message TestMessage2 {
-  bytes TestBitfield = 1 [(cast_type_option) = "github.com/prysmaticlabs/go-bitfield.Bitlist"];
+  bytes TestBitfield = 1 [(cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitlist"];
 }

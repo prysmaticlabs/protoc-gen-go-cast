@@ -6,13 +6,13 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"regexp"
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	"github.com/jhump/protoreflect/desc"
+	"github.com/jhump/protoreflect/dynamic"
 	"golang.org/x/tools/go/ast/astutil"
 	"google.golang.org/protobuf/compiler/protogen"
-	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 // GenerateCastedFile generates a the cast typed contents of a .pb.go file.
@@ -20,11 +20,27 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	filename := file.GeneratedFilenamePrefix + ".pb.go"
 	newGennedFile := gen.NewGeneratedFile(filename, file.GoImportPath)
 
+	var deps []*desc.FileDescriptor
+	for path, fileDesc := range gen.FilesByPath {
+		if *file.Proto.Name != path {
+			fileDesc, err := desc.CreateFileDescriptor(fileDesc.Proto)
+			if err != nil {
+				panic(err)
+			}
+			deps = append(deps, fileDesc)
+		}
+	}
+	fileDesc, err := desc.CreateFileDescriptor(file.Proto, deps...)
+	if err != nil {
+		panic(err)
+	}
+
 	fieldNameToCastType := make(map[string]string)
+	fieldNameToStructTags := make(map[string]string)
 	var newImports []string
 	for _, message := range file.Messages {
 		for _, field := range message.Fields {
-			castType, err := castTypeFromField(field)
+			castType, err := castTypeFromField(fileDesc, field)
 			if err != nil {
 				panic(err)
 			}
@@ -41,6 +57,20 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 			camelKey := strcase.ToCamel(key)
 			fieldNameToCastType[key] = importedType
 			fieldNameToCastType[camelKey] = importedType
+
+			structTags, err := structTagsFromField(fileDesc, field)
+			if err != nil {
+				panic(err)
+			}
+			if structTags == "" {
+				continue
+			}
+
+			// Mark both in the case its modified in the resulting generation.
+			key = fmt.Sprintf("%s", field.Desc.Name())
+			camelKey = strcase.ToCamel(key)
+			fieldNameToStructTags[key] = structTags
+			fieldNameToStructTags[camelKey] = structTags
 		}
 	}
 
@@ -70,17 +100,25 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 		if len(field.Names)  == 0 {
 			return true
 		}
+		replacement := &ast.Field{
+			Doc: field.Doc,
+			Names: field.Names,
+			Type: field.Type,
+			Tag: field.Tag,
+			Comment: field.Comment,
+		}
 		name := field.Names[0].Name
 		if castType, ok := fieldNameToCastType[name]; ok {
-			replacement := &ast.Field{
-				Doc: field.Doc,
-				Names: field.Names,
-				Type: ast.NewIdent(castType),
-				Tag: field.Tag,
-				Comment: field.Comment,
-			}
-			c.Replace(replacement)
+			replacement.Type = ast.NewIdent(castType)
 		}
+		if structTags, ok := fieldNameToStructTags[name]; ok {
+			replacement.Tag = &ast.BasicLit{
+				Kind: token.STRING,
+				ValuePos: field.Tag.ValuePos,
+				Value: fmt.Sprintf("%s%s`", field.Tag.Value[:len(field.Tag.Value)-1], structTags),
+			}
+		}
+		c.Replace(replacement)
 		return true
 	}
 
@@ -107,17 +145,62 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	}
 }
 
-func castTypeFromField(field *protogen.Field) (string, error) {
-	options := field.Desc.Options().(*descriptorpb.FieldOptions)
-	regex, err := regexp.Compile("50000:\"([^\"]*)\"")
-	if err != nil {
+func castTypeFromField(fileDesc *desc.FileDescriptor, field *protogen.Field) (string, error) {
+	registry := dynamic.NewExtensionRegistryWithDefaults()
+	registry.AddExtensionsFromFile(fileDesc)
+	optionReader := NewOptionReader(registry)
+
+	name := string(field.Desc.Name())
+	parentName := string(field.Parent.Desc.Name())
+	var fieldDesc *desc.FieldDescriptor
+	for _, mm := range fileDesc.GetMessageTypes() {
+		if mm.GetName() == parentName {
+			fieldDesc = mm.FindFieldByName(name)
+		}
+	}
+	var value string
+	if err := optionReader.ReadOptionByName(fieldDesc, "v1.cast_type", &value); err != nil {
 		return "", err
 	}
-	matches := regex.FindStringSubmatch(options.String())
-	if len(matches) != 2 {
-		return "", nil
+	return value, nil
+}
+
+func structTagsFromField(fileDesc *desc.FileDescriptor, field *protogen.Field) (string, error) {
+	// Create the option registry.
+	registry := dynamic.NewExtensionRegistryWithDefaults()
+	registry.AddExtensionsFromFile(fileDesc)
+	optionReader := NewOptionReader(registry)
+
+	// Find the message for given field.
+	name := string(field.Desc.Name())
+	parentName := string(field.Parent.Desc.Name())
+	var fieldDesc *desc.FieldDescriptor
+	for _, mm := range fileDesc.GetMessageTypes() {
+		childField := mm.FindFieldByName(name)
+		if mm.GetName() == parentName && childField != nil {
+			fieldDesc = mm.FindFieldByName(name)
+		}
 	}
-	return matches[1], nil
+	if fieldDesc == nil {
+		return "", fmt.Errorf("no field found for %s", name)
+	}
+
+	// Find the extension and append its value. Only supports strings for simplicity.
+	var allTags string
+	for _, ext := range fileDesc.GetExtensions() {
+		qualifiedName := ext.GetFullyQualifiedName()
+		var value interface{}
+		value, err := optionReader.GetOptionByName(fieldDesc, qualifiedName)
+		if err != nil {
+			return "", err
+		}
+		valueStr := value.(string)
+		if valueStr == "" {
+			continue
+		}
+		allTags += fmt.Sprintf(" %s:\"%s\"", snakeToCamel(ext.GetName()), valueStr)
+	}
+	return allTags, nil
 }
 
 func castTypeToGoType(castType string) (string, string) {
@@ -137,3 +220,7 @@ func namedImport(importPath string) string {
 	return importName
 }
 
+func snakeToCamel(text string) string {
+	newText := strings.ReplaceAll(text, "_", "-")
+	return newText
+}
