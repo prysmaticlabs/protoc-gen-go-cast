@@ -26,11 +26,14 @@ go_library(
     srcs = [
         "cast.go",
         "main.go",
+        "options.go",
     ],
     importpath = "github.com/prysmaticlabs/protoc-gen-go-cast",
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_iancoleman_strcase//:go_default_library",
+        "@com_github_jhump_protoreflect//desc:go_default_library",
+        "@com_github_jhump_protoreflect//dynamic:go_default_library",
         "@org_golang_google_protobuf//cmd/protoc-gen-go/internal_gengo:go_default_library",
         "@org_golang_google_protobuf//compiler/protogen:go_default_library",
         "@org_golang_google_protobuf//types/descriptorpb:go_default_library",

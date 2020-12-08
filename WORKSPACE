@@ -155,8 +155,8 @@ go_repository(
 go_repository(
     name = "org_golang_google_protobuf",
     importpath = "google.golang.org/protobuf",
-    sum = "h1:Ejskq+SyPohKW+1uil0JJMtmHCgJPJ/qWTxr8qp+R4c=",
-    version = "v1.25.0",
+    sum = "h1:OwhZOOMuf7leLaSCuxtQ9FW7ui2L2L6UKOtKAUqovUQ=",
+    version = "v1.25.1-0.20200805231151-a709e31e5d12",
 )
 
 go_repository(
@@ -225,8 +225,8 @@ go_repository(
 go_repository(
     name = "org_golang_x_tools",
     importpath = "golang.org/x/tools",
-    sum = "h1:LeKnBqBqKuA2WEVPhyr22inXOMgckBKHfUvD0n5kyCg=",
-    version = "v0.0.0-20201109182053-3db8fd265862",
+    sum = "h1:m/pavz5iHQjTS53xz7jWmXK6qZIJaGy7rQwODcna+cs=",
+    version = "v0.0.0-20201208002638-66f931576d67",
 )
 
 go_repository(
@@ -255,13 +255,6 @@ go_repository(
     importpath = "github.com/gordonklaus/ineffassign",
     sum = "h1:vc7Dmrk4JwS0ZPS6WZvWlwDflgDTA26jItmbSj83nug=",
     version = "v0.0.0-20200309095847-7953dde2c7bf",
-)
-
-go_repository(
-    name = "com_github_jhump_protoreflect",
-    importpath = "github.com/jhump/protoreflect",
-    sum = "h1:dU3rf2wv1WHvC7mSGYfOaciUAFf5idu6FdC3uZIOlP0=",
-    version = "v1.7.1",
 )
 
 go_repository(
