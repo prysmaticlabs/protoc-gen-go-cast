@@ -6,6 +6,7 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"log"
 	"regexp"
 	"strings"
 
@@ -20,6 +21,10 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	filename := file.GeneratedFilenamePrefix + ".pb.go"
 	newGennedFile := gen.NewGeneratedFile(filename, file.GoImportPath)
 
+	log.Println(file.Proto.Name)
+	for _, ee := range file.Extensions {
+		log.Println(ee.Desc.FullName())
+	}
 	fieldNameToCastType := make(map[string]string)
 	fieldNameToStructTags := make(map[string]string)
 	var newImports []string
