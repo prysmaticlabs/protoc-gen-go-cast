@@ -43,8 +43,8 @@ protobuf_deps()
 go_repository(
     name = "co_honnef_go_tools",
     importpath = "honnef.co/go/tools",
-    sum = "h1:UoveltGrhghAA7ePc+e+QYDHXrBps2PqFZiHkGR/xK8=",
-    version = "v0.0.1-2020.1.4",
+    sum = "h1:/hemPrYIhOhy8zYrNj+069zDB68us2sMGsfkFJO0iZs=",
+    version = "v0.0.0-20190523083050-ea95bdfd59fc",
 )
 
 go_repository(

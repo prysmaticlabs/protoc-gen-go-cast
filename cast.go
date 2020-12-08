@@ -6,14 +6,13 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"log"
+	"regexp"
 	"strings"
 
 	"github.com/iancoleman/strcase"
-	"github.com/jhump/protoreflect/desc"
-	"github.com/jhump/protoreflect/dynamic"
 	"golang.org/x/tools/go/ast/astutil"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 // GenerateCastedFile generates a the cast typed contents of a .pb.go file.
@@ -21,28 +20,12 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	filename := file.GeneratedFilenamePrefix + ".pb.go"
 	newGennedFile := gen.NewGeneratedFile(filename, file.GoImportPath)
 
-	var deps []*desc.FileDescriptor
-	for path, fileDesc := range gen.FilesByPath {
-		if *file.Proto.Name != path {
-			fD, err := desc.CreateFileDescriptor(fileDesc.Proto)
-			if err != nil {
-				log.Fatalf("Could not create dependency descriptor for %s: %v", *fileDesc.Proto.Name, err)
-			}
-			deps = append(deps, fD)
-		}
-	}
-
-	fileDesc, err := desc.CreateFileDescriptor(file.Proto, deps...)
-	if err != nil {
-		log.Fatalf("Could not create descriptor for %s: %v", *file.Proto.Name, err)
-	}
-
 	fieldNameToCastType := make(map[string]string)
 	fieldNameToStructTags := make(map[string]string)
 	var newImports []string
 	for _, message := range file.Messages {
 		for _, field := range message.Fields {
-			castType, err := castTypeFromField(fileDesc, field)
+			castType, err := castTypeFromField(file, field)
 			if err != nil {
 				panic(err)
 			}
@@ -59,7 +42,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				fieldNameToCastType[camelKey] = importedType
 			}
 
-			structTags, err := structTagsFromField(fileDesc, field)
+			structTags, err := structTagsFromField(file, field)
 			if err != nil {
 				panic(err)
 			}
@@ -146,69 +129,46 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	}
 }
 
-func castTypeFromField(fileDesc *desc.FileDescriptor, field *protogen.Field) (string, error) {
-	registry := dynamic.NewExtensionRegistryWithDefaults()
-	registry.AddExtensionsFromFile(fileDesc)
-	optionReader := NewOptionReader(registry)
-
-	// Find the message for given field.
-	name := string(field.Desc.FullName())
-	var fieldDesc *desc.FieldDescriptor
-	for _, mm := range fileDesc.GetMessageTypes() {
-		for _, ff := range mm.GetFields() {
-			if ff.GetFullyQualifiedName() == name {
-				fieldDesc = ff
-			}
+func castTypeFromField(fileDesc *protogen.File, field *protogen.Field) (string, error) {
+	var castTypeID uint64
+	// Get the id for cast type extension.
+	for _, ee := range fileDesc.Extensions {
+		if ee.Desc.Name() == "cast_type" {
+			castTypeID = uint64(ee.Desc.Number())
 		}
 	}
-	if fieldDesc == nil {
-		return "", fmt.Errorf("no field found for %s", name)
-	}
 
-	value, err := optionReader.GetOptionByName(fieldDesc, fmt.Sprintf("%s.cast_type", fileDesc.GetPackage()))
-	if err == dynamic.ErrUnknownFieldName {
+	// Regex for it since names aren't easily visible.
+	options := field.Desc.Options().(*descriptorpb.FieldOptions)
+	regex, err := regexp.Compile(fmt.Sprintf("%d:\"([^\"]*)\"", castTypeID))
+	if err != nil {
+		return "", err
+	}
+	matches := regex.FindStringSubmatch(options.String())
+	if len(matches) != 2 {
 		return "", nil
 	}
-	if err != nil {
-		return "", fmt.Errorf("could not read option by name: %v", err)
-	}
-
-	return value.(string), nil
+	return matches[1], nil
 }
 
-func structTagsFromField(fileDesc *desc.FileDescriptor, field *protogen.Field) (string, error) {
-	// Create the option registry.
-	registry := dynamic.NewExtensionRegistryWithDefaults()
-	registry.AddExtensionsFromFile(fileDesc)
-	optionReader := NewOptionReader(registry)
-
-	// Find the message for given field.
-	name := string(field.Desc.FullName())
-	var fieldDesc *desc.FieldDescriptor
-	for _, mm := range fileDesc.GetMessageTypes() {
-		for _, ff := range mm.GetFields() {
-			if ff.GetFullyQualifiedName() == name {
-				fieldDesc = ff
-			}
-		}
-	}
-	if fieldDesc == nil {
-		return "", fmt.Errorf("no field found for %s", name)
+func structTagsFromField(fileDesc *protogen.File, field *protogen.Field) (string, error) {
+	idToName := make(map[uint64]string)
+	for _, ee := range fileDesc.Extensions {
+		idToName[uint64(ee.Desc.Number())] = string(ee.Desc.Name())
 	}
 
-	// Find the extension and append its value. Only supports strings for simplicity.
 	var allTags string
-	for _, ext := range fileDesc.GetExtensions() {
-		qualifiedName := ext.GetFullyQualifiedName()
-		value, err := optionReader.GetOptionByName(fieldDesc, qualifiedName)
+	options := field.Desc.Options().(*descriptorpb.FieldOptions)
+	for id, name := range idToName {
+		regex, err := regexp.Compile(fmt.Sprintf("%d:\"([^\"]*)\"", id))
 		if err != nil {
 			return "", err
 		}
-		valueStr := value.(string)
-		if valueStr == "" {
+		matches := regex.FindStringSubmatch(options.String())
+		if len(matches) != 2 {
 			continue
 		}
-		allTags += fmt.Sprintf(" %s:\"%s\"", snakeToCamel(ext.GetName()), valueStr)
+		allTags += fmt.Sprintf(" %s:\"%s\"", snakeToCamel(name), matches[1])
 	}
 	return allTags, nil
 }
