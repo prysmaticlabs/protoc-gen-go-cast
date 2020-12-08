@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -31,10 +32,15 @@ func main() {
 		if *importPrefix != "" {
 			return errors.New("protoc-gen-go-cast: import_prefix is not supported")
 		}
+		var allExtensions []*protogen.Extension
+		for _, f := range gen.Files {
+			allExtensions = append(allExtensions, f.Extensions...)
+		}
+		log.Println(len(allExtensions))
 		for _, f := range gen.Files {
 			if f.Generate {
 				gennedFile := gengo.GenerateFile(gen, f)
-				GenerateCastedFile(gen, gennedFile, f)
+				GenerateCastedFile(gen, gennedFile, f, allExtensions)
 			}
 		}
 		gen.SupportedFeatures = gengo.SupportedFeatures

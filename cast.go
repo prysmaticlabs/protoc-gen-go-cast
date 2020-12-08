@@ -6,7 +6,6 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"log"
 	"regexp"
 	"strings"
 
@@ -17,20 +16,16 @@ import (
 )
 
 // GenerateCastedFile generates a the cast typed contents of a .pb.go file.
-func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile, file *protogen.File) {
+func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile, file *protogen.File, allExtensions []*protogen.Extension) {
 	filename := file.GeneratedFilenamePrefix + ".pb.go"
 	newGennedFile := gen.NewGeneratedFile(filename, file.GoImportPath)
 
-	log.Println(file.Proto.Name)
-	for _, ee := range file.Extensions {
-		log.Println(ee.Desc.FullName())
-	}
 	fieldNameToCastType := make(map[string]string)
 	fieldNameToStructTags := make(map[string]string)
 	var newImports []string
 	for _, message := range file.Messages {
 		for _, field := range message.Fields {
-			castType, err := castTypeFromField(file, field)
+			castType, err := castTypeFromField(allExtensions, field)
 			if err != nil {
 				panic(err)
 			}
@@ -47,7 +42,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				fieldNameToCastType[camelKey] = importedType
 			}
 
-			structTags, err := structTagsFromField(file, field)
+			structTags, err := structTagsFromField(allExtensions, field)
 			if err != nil {
 				panic(err)
 			}
@@ -134,10 +129,10 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	}
 }
 
-func castTypeFromField(fileDesc *protogen.File, field *protogen.Field) (string, error) {
+func castTypeFromField(allExtensions []*protogen.Extension, field *protogen.Field) (string, error) {
 	var castTypeID uint64
 	// Get the id for cast type extension.
-	for _, ee := range fileDesc.Extensions {
+	for _, ee := range allExtensions {
 		if ee.Desc.Name() == "cast_type" {
 			castTypeID = uint64(ee.Desc.Number())
 		}
@@ -156,9 +151,9 @@ func castTypeFromField(fileDesc *protogen.File, field *protogen.Field) (string, 
 	return matches[1], nil
 }
 
-func structTagsFromField(fileDesc *protogen.File, field *protogen.Field) (string, error) {
+func structTagsFromField(extensions []*protogen.Extension, field *protogen.Field) (string, error) {
 	idToName := make(map[uint64]string)
-	for _, ee := range fileDesc.Extensions {
+	for _, ee := range extensions {
 		idToName[uint64(ee.Desc.Number())] = string(ee.Desc.Name())
 	}
 
