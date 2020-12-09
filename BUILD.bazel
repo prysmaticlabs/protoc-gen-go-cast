@@ -17,6 +17,7 @@ gazelle(name = "gazelle")
 go_proto_compiler(
     name = "go_cast",
     #    options = ["plugins=grpc"],
+    plugin = ":go_default_library",
     visibility = ["//visibility:public"],
     deps = gen_well_known_types(),
 )
