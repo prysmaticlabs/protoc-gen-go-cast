@@ -8,6 +8,7 @@ import (
 	"go/token"
 	"regexp"
 	"strings"
+	"log"
 
 	protobuf "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/iancoleman/strcase"
@@ -110,6 +111,8 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	}
 	// Remove any unnamed imports.
 	for _, ii := range astFile.Imports {
+		log.Println(ii.Path.Value)
+		log.Println(ii.Name.Name)
 		_ = astutil.DeleteNamedImport(fset, astFile, "_", ii.Path.Value)
 	}
 
