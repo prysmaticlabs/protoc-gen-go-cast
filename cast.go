@@ -108,6 +108,10 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 		importName := namedImport(importPath)
 		_ = astutil.AddNamedImport(fset, astFile, importName, importPath)
 	}
+	// Remove any unnamed imports.
+	for _, ii := range astFile.Imports {
+		_ = astutil.DeleteNamedImport(fset, astFile, "_", ii.Path.Value)
+	}
 
 	result := astutil.Apply(astFile, preFunc, postFunc)
 	resultFile := result.(*ast.File)
