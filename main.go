@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	gengo "google.golang.org/protobuf/cmd/protoc-gen-go/internal_gengo"
 	"google.golang.org/protobuf/compiler/protogen"
@@ -36,7 +37,11 @@ func main() {
 		for _, f := range gen.Files {
 			allExtensions = append(allExtensions, f.Extensions...)
 		}
-		log.Println(len(allExtensions))
+		extensionNames := make([]string, len(allExtensions))
+		for i, ee := range allExtensions {
+			extensionNames[i] = string(ee.Desc.Name())
+		}
+		log.Printf("Casting for %d extensions: %s\n", len(allExtensions), strings.Join(extensionNames, ", "))
 		for _, f := range gen.Files {
 			if f.Generate {
 				gennedFile := gengo.GenerateFile(gen, f)
