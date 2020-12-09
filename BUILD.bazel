@@ -34,6 +34,7 @@ go_library(
         "@com_github_iancoleman_strcase//:go_default_library",
         "@org_golang_google_protobuf//cmd/protoc-gen-go/internal_gengo:go_default_library",
         "@org_golang_google_protobuf//compiler/protogen:go_default_library",
+        "@org_golang_google_protobuf//types/descriptorpb:go_default_library",
         "@org_golang_x_tools//go/ast/astutil:go_default_library",
     ],
 )
