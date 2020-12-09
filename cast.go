@@ -113,7 +113,8 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	for _, ii := range astFile.Imports {
 		log.Println(ii.Path.Value)
 		log.Println(ii.Name.Name)
-		_ = astutil.DeleteNamedImport(fset, astFile, "_", ii.Path.Value)
+		deleted := astutil.DeleteNamedImport(fset, astFile, "_", ii.Path.Value)
+		log.Println(deleted)
 	}
 
 	result := astutil.Apply(astFile, preFunc, postFunc)
