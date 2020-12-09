@@ -60,18 +60,6 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 
 
 	preFunc := func(c *astutil.Cursor) bool {
-		n := c.Node()
-		switch n.(type) {
-		case *ast.ImportSpec:
-			return false
-		case *ast.ArrayType:
-			return false
-		case *ast.CommentGroup:
-			return false
-		case *ast.Comment:
-			return false
-		}
-
 		return true
 	}
 
