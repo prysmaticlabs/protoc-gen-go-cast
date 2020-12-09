@@ -9,10 +9,10 @@ import (
 	"regexp"
 	"strings"
 
+	protobuf "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/iancoleman/strcase"
 	"golang.org/x/tools/go/ast/astutil"
 	"google.golang.org/protobuf/compiler/protogen"
-	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 // GenerateCastedFile generates a the cast typed contents of a .pb.go file.
@@ -127,7 +127,7 @@ func castTypeFromField(allExtensions []*protogen.Extension, field *protogen.Fiel
 	}
 
 	// Regex for it since names aren't easily visible.
-	options := field.Desc.Options().(*descriptorpb.FieldOptions)
+	options := field.Desc.Options().(*protobuf.FieldOptions)
 	regex, err := regexp.Compile(fmt.Sprintf("%d:\"([^\"]*)\"", castTypeID))
 	if err != nil {
 		return "", err
@@ -146,7 +146,7 @@ func structTagsFromField(extensions []*protogen.Extension, field *protogen.Field
 	}
 
 	var allTags string
-	options := field.Desc.Options().(*descriptorpb.FieldOptions)
+	options := field.Desc.Options().(*protobuf.FieldOptions)
 	for id, name := range idToName {
 		regex, err := regexp.Compile(fmt.Sprintf("%d:\"([^\"]*)\"", id))
 		if err != nil {
