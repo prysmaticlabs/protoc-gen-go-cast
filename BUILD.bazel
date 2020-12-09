@@ -27,7 +27,6 @@ go_library(
     srcs = [
         "cast.go",
         "main.go",
-        "options.go",
     ],
     importpath = "github.com/prysmaticlabs/protoc-gen-go-cast",
     visibility = ["//visibility:public"],
