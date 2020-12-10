@@ -35,9 +35,9 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_iancoleman_strcase//:go_default_library",
-        "@io_bazel_rules_go//proto/wkt:descriptor_go_proto",
         "@org_golang_google_protobuf//cmd/protoc-gen-go/internal_gengo:go_default_library",
         "@org_golang_google_protobuf//compiler/protogen:go_default_library",
+        "@org_golang_google_protobuf//types/descriptorpb:go_default_library",
         "@org_golang_x_tools//go/ast/astutil:go_default_library",
     ],
 )
@@ -46,4 +46,24 @@ go_binary(
     name = "protoc-gen-go-cast",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
+)
+
+proto_library(
+    name = "test_proto",
+    srcs = ["test.proto"],
+    visibility = ["//visibility:public"],
+    deps = ["@com_google_protobuf//:descriptor_proto"],
+)
+
+go_proto_library(
+    name = "test_go_proto",
+    importpath = "github.com/prysmaticlabs/protoc-gen-go-cast/test",
+    proto = ":test_proto",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["cast_test.go"],
+    embed = [":go_default_library"],
 )

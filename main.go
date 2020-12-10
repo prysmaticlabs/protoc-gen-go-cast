@@ -24,8 +24,19 @@ func main() {
 		plugins      = flags.String("plugins", "", "deprecated option")
 		importPrefix = flags.String("import_prefix", "", "deprecated option")
 	)
+	importRewriteFunc := func(importPath protogen.GoImportPath) protogen.GoImportPath {
+		switch importPath {
+		case "context", "fmt", "math":
+			return importPath
+		}
+		if *importPrefix != "" {
+			return protogen.GoImportPath(*importPrefix) + importPath
+		}
+		return importPath
+	}
 	protogen.Options{
 		ParamFunc: flags.Set,
+		ImportRewriteFunc: importRewriteFunc,
 	}.Run(func(gen *protogen.Plugin) error {
 		if *plugins != "" {
 			return errors.New("protoc-gen-go-cast: plugins are not supported; use 'protoc --go-grpc_out=...' to generate gRPC")
@@ -33,6 +44,7 @@ func main() {
 		if *importPrefix != "" {
 			return errors.New("protoc-gen-go-cast: import_prefix is not supported")
 		}
+
 		var allExtensions []*protogen.Extension
 		for _, f := range gen.Files {
 			allExtensions = append(allExtensions, f.Extensions...)
