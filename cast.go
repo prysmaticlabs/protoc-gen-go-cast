@@ -8,7 +8,6 @@ import (
 	"go/token"
 	"regexp"
 	"strings"
-	"log"
 
 	protobuf "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/iancoleman/strcase"
@@ -26,6 +25,38 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	var newImports []string
 	for _, message := range file.Messages {
 		for _, field := range message.Fields {
+			if field.Message != nil && len(field.Message.Fields) > 0 {
+				for _, ff := range field.Message.Fields {
+					castType, err := castTypeFromField(allExtensions, ff)
+					if err != nil {
+						panic(err)
+					}
+					if castType != "" {
+						importPath, importedType := castTypeToGoType(castType)
+						if importPath != "" {
+							newImports = append(newImports, importPath)
+						}
+
+						// Mark both keys in the case its modified in the resulting generation.
+						key := fmt.Sprintf("%s", ff.Desc.Name())
+						camelKey := strcase.ToCamel(key)
+						fieldNameToCastType[key] = importedType
+						fieldNameToCastType[camelKey] = importedType
+					}
+
+					structTags, err := structTagsFromField(allExtensions, ff)
+					if err != nil {
+						panic(err)
+					}
+					if structTags != "" {
+						// Mark both keys in the case its modified in the resulting generation.
+						key := fmt.Sprintf("%s", ff.Desc.Name())
+						camelKey := strcase.ToCamel(key)
+						fieldNameToStructTags[key] = structTags
+						fieldNameToStructTags[camelKey] = structTags
+					}
+				}
+			}
 			castType, err := castTypeFromField(allExtensions, field)
 			if err != nil {
 				panic(err)
