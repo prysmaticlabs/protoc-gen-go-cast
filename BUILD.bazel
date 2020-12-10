@@ -18,7 +18,7 @@ go_proto_compiler(
     name = "go_cast",
     #    options = ["plugins=grpc"],
     options = [
-        "--experimental_allow_proto3_optional",
+        "--protocopt=--experimental_allow_proto3_optional",
     ],
     plugin = ":protoc-gen-go-cast",
     visibility = ["//visibility:public"],
