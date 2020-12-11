@@ -42,7 +42,7 @@ message Attestation {
   AttestationData data = 2;
 
   // 96 byte BLS aggregate signature.
-  bytes signature = 3 [(ssz_size) = "96"];
+  optional bytes signature = 3 [(ssz_size) = "96"];
 }
 
 message AggregateAttestationAndProof {
