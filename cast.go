@@ -7,6 +7,7 @@ import (
 	"go/printer"
 	"go/token"
 	"regexp"
+	"sort"
 	"strings"
 
 	protobuf "github.com/golang/protobuf/protoc-gen-go/descriptor"
@@ -145,7 +146,7 @@ func structTagsFromField(extensions []*protogen.Extension, field *protogen.Field
 		idToName[uint64(ee.Desc.Number())] = string(ee.Desc.Name())
 	}
 
-	var allTags string
+	var tags []string
 	options := field.Desc.Options().(*protobuf.FieldOptions)
 	for id, name := range idToName {
 		regex, err := regexp.Compile(fmt.Sprintf("%d:\"([^\"]*)\"", id))
@@ -156,8 +157,10 @@ func structTagsFromField(extensions []*protogen.Extension, field *protogen.Field
 		if len(matches) != 2 {
 			continue
 		}
-		allTags += fmt.Sprintf(" %s:\"%s\"", snakeToCamel(name), matches[1])
+		tags = append(tags, fmt.Sprintf(" %s:\"%s\"", snakeToCamel(name), matches[1]))
 	}
+	sort.Strings(tags)
+	allTags := strings.Join(tags, "")
 	return allTags, nil
 }
 
