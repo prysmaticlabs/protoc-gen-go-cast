@@ -25,6 +25,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "cast.go",
+        "grpc.go",
         "main.go",
     ],
     importpath = "github.com/prysmaticlabs/protoc-gen-go-cast",
@@ -34,6 +35,7 @@ go_library(
         "@io_bazel_rules_go//proto/wkt:descriptor_go_proto",
         "@org_golang_google_protobuf//cmd/protoc-gen-go/internal_gengo:go_default_library",
         "@org_golang_google_protobuf//compiler/protogen:go_default_library",
+        "@org_golang_google_protobuf//types/descriptorpb:go_default_library",
         "@org_golang_x_tools//go/ast/astutil:go_default_library",
     ],
 )
@@ -53,6 +55,7 @@ proto_library(
 
 go_proto_library(
     name = "test_go_proto",
+    compilers = ["@io_bazel_rules_go//proto:go_grpc"],
     importpath = "github.com/prysmaticlabs/protoc-gen-go-cast/test",
     proto = ":test_proto",
     visibility = ["//visibility:public"],
