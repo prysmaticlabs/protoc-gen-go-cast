@@ -18,7 +18,6 @@ go_proto_compiler(
     name = "go_cast",
     plugin = ":protoc-gen-go-cast",
     visibility = ["//visibility:public"],
-    deps = gen_well_known_types(),
 )
 
 go_proto_compiler(
@@ -28,7 +27,6 @@ go_proto_compiler(
         "plugins=grpc"
     ],
     visibility = ["//visibility:public"],
-    deps = gen_well_known_types(),
 )
 
 go_library(
@@ -54,6 +52,7 @@ go_binary(
     name = "protoc-gen-go-cast",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
+    deps = gen_well_known_types(),
 )
 
 proto_library(
