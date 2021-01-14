@@ -13,6 +13,22 @@ extend google.protobuf.FieldOptions {
   string cast_type = 50003;
 }
 
+// The greeting service definition.
+service Greeter {
+  // Sends a greeting
+  rpc SayHello (HelloRequest) returns (HelloReply) {}
+}
+
+// The request message containing the user's name.
+message HelloRequest {
+  string name = 1;
+}
+
+// The response message containing the greetings
+message HelloReply {
+  string message = 1;
+}
+
 message Deposit {
   message Data {
     // 48 byte BLS public key of the validator.
@@ -42,7 +58,7 @@ message Attestation {
   AttestationData data = 2;
 
   // 96 byte BLS aggregate signature.
-  optional bytes signature = 3 [(ssz_size) = "96"];
+  bytes signature = 3 [(ssz_size) = "96"];
 }
 
 message AggregateAttestationAndProof {

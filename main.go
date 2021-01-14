@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -21,8 +20,8 @@ func main() {
 
 	var (
 		flags        flag.FlagSet
-		plugins      = flags.String("plugins", "", "deprecated option")
-		importPrefix = flags.String("import_prefix", "", "deprecated option")
+		plugins      = flags.String("plugins", "", "list of plugins to enable (supported values: grpc)")
+		importPrefix = flags.String("import_prefix", "", "prefix to prepend to import paths")
 	)
 	importRewriteFunc := func(importPath protogen.GoImportPath) protogen.GoImportPath {
 		switch importPath {
@@ -38,13 +37,17 @@ func main() {
 		ParamFunc: flags.Set,
 		ImportRewriteFunc: importRewriteFunc,
 	}.Run(func(gen *protogen.Plugin) error {
-		if *plugins != "" {
-			return errors.New("protoc-gen-go-cast: plugins are not supported; use 'protoc --go-grpc_out=...' to generate gRPC")
+		grpc := false
+		for _, plugin := range strings.Split(*plugins, ",") {
+			log.Println(plugin)
+			switch plugin {
+			case "grpc":
+				grpc = true
+			case "":
+			default:
+				return fmt.Errorf("protoc-gen-go: unknown plugin %q", plugin)
+			}
 		}
-		if *importPrefix != "" {
-			return errors.New("protoc-gen-go-cast: import_prefix is not supported")
-		}
-
 		var allExtensions []*protogen.Extension
 		for _, f := range gen.Files {
 			allExtensions = append(allExtensions, f.Extensions...)
@@ -55,10 +58,14 @@ func main() {
 		}
 		log.Printf("Casting for %d extensions: %s\n", len(allExtensions), strings.Join(extensionNames, ", "))
 		for _, f := range gen.Files {
-			if f.Generate {
-				gennedFile := gengo.GenerateFile(gen, f)
-				GenerateCastedFile(gen, gennedFile, f, allExtensions)
+			if !f.Generate {
+				continue
 			}
+			gennedFile := gengo.GenerateFile(gen, f)
+			if grpc {
+				GenerateFileContent(gen, f, gennedFile)
+			}
+			GenerateCastedFile(gen, gennedFile, f, allExtensions)
 		}
 		gen.SupportedFeatures = gengo.SupportedFeatures
 		return nil
