@@ -18,6 +18,11 @@ go_proto_compiler(
     name = "go_cast",
     plugin = ":protoc-gen-go-cast",
     visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//reflect/protoreflect:go_default_library",
+        "@org_golang_google_protobuf//runtime/protoimpl:go_default_library",
+    ],
 )
 
 go_proto_compiler(
@@ -28,6 +33,9 @@ go_proto_compiler(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//reflect/protoreflect:go_default_library",
+        "@org_golang_google_protobuf//runtime/protoimpl:go_default_library",
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//codes:go_default_library",
         "@org_golang_google_grpc//status:go_default_library",
@@ -57,11 +65,7 @@ go_binary(
     name = "protoc-gen-go-cast",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
-    deps = gen_well_known_types() + [
-        "@com_github_golang_protobuf//proto:go_default_library",
-        "@org_golang_google_protobuf//reflect/protoreflect:go_default_library",
-        "@org_golang_google_protobuf//runtime/protoimpl:go_default_library",
-    ],
+    deps = gen_well_known_types(),
 )
 
 proto_library(
