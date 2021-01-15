@@ -19,6 +19,21 @@ http_archive(
     ],
 )
 
+git_repository(
+    name = "com_google_protobuf",
+    commit = "2514f0bd7da7e2af1bed4c5d1b84f031c4d12c10",
+    remote = "https://github.com/protocolbuffers/protobuf",
+    shallow_since = "1605300819 -0800",
+)
+
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+
+protobuf_deps()
+
+load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
+
+bazel_skylib_workspace()
+
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 
 go_rules_dependencies()
@@ -28,17 +43,6 @@ go_register_toolchains()
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 
 gazelle_dependencies()
-
-git_repository(
-    name = "com_google_protobuf",
-    commit = "4cf5bfee9546101d98754d23ff378ff718ba8438",
-    remote = "https://github.com/protocolbuffers/protobuf",
-    shallow_since = "1558721209 -0700",
-)
-
-load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
-
-protobuf_deps()
 
 go_repository(
     name = "co_honnef_go_tools",
