@@ -29,7 +29,7 @@ go_proto_compiler(
     name = "go_cast_grpc",
     plugin = ":protoc-gen-go-cast",
     options = [
-        "plugins=grpc"
+        "plugins=grpc",
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -81,6 +81,10 @@ go_proto_library(
     importpath = "github.com/prysmaticlabs/protoc-gen-go-cast/test",
     proto = ":test_proto",
     visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
+        "@org_golang_google_protobuf//types/descriptorpb:go_default_library",
+    ],
 )
 
 go_test(
