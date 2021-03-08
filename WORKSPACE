@@ -38,7 +38,7 @@ bazel_skylib_workspace()
 
 git_repository(
     name = "com_google_protobuf",
-    commit = "2514f0bd7da7e2af1bed4c5d1b84f031c4d12c10",
+    commit = "4fff47a41811eeaef8add8def480062282292ce5",
     remote = "https://github.com/protocolbuffers/protobuf",
     shallow_since = "1605300819 -0800",
 )
@@ -59,6 +59,13 @@ go_repository(
 )
 
 gazelle_dependencies()
+
+go_repository(
+    name = "com_github_prysmaticlabs_eth2_types",
+    importpath = "github.com/prysmaticlabs/eth2-types",
+    sum = "h1:b4WxLSz1KzkEdF/DPcog9gIKN9d9YAFgbZO1hqjNrW0=",
+    version = "v0.0.0-20210219172114-1da477c09a06",
+)
 
 go_repository(
     name = "co_honnef_go_tools",
@@ -231,8 +238,8 @@ go_repository(
 go_repository(
     name = "org_golang_x_sys",
     importpath = "golang.org/x/sys",
-    sum = "h1:+Nyd8tzPX9R7BWHguqsrbFdRx3WQ/1ib8I44HXV5yTA=",
-    version = "v0.0.0-20200930185726-fdedc70b468f",
+    sum = "h1:myAQVi0cGEoqQVR5POX+8RR2mrocKqNN1hmeMqhX27k=",
+    version = "v0.0.0-20210119212857-b64e53b001e4",
 )
 
 go_repository(
@@ -245,8 +252,8 @@ go_repository(
 go_repository(
     name = "org_golang_x_tools",
     importpath = "golang.org/x/tools",
-    sum = "h1:m/pavz5iHQjTS53xz7jWmXK6qZIJaGy7rQwODcna+cs=",
-    version = "v0.0.0-20201208002638-66f931576d67",
+    sum = "h1:po9/4sTYwZU9lPhi1tOrb4hCv3qrhiQ77LZfGa2OjwY=",
+    version = "v0.1.0",
 )
 
 go_repository(
@@ -259,8 +266,8 @@ go_repository(
 go_repository(
     name = "com_github_iancoleman_strcase",
     importpath = "github.com/iancoleman/strcase",
-    sum = "h1:gnomlvw9tnV3ITTAxzKSgTF+8kFWcU/f+TgttpXGz1U=",
-    version = "v0.1.2",
+    sum = "h1:dJBk1m2/qjL1twPLf68JND55vvivMupZ4wIzE8CTdBw=",
+    version = "v0.1.3",
 )
 
 go_repository(
