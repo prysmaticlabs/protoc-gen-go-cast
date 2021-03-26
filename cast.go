@@ -6,7 +6,6 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"log"
 	"regexp"
 	"sort"
 	"strings"
