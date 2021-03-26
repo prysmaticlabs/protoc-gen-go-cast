@@ -6,6 +6,7 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -49,6 +50,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				fieldNameToCastType[camelKey] = importedType
 				fieldNameToCastType["Get" + field.GoName] = importedType
 
+				log.Println(field.Desc.Kind().String())
 				zeroValue := typeDefaultMap[field.Desc.Kind().String()]
 				fieldNameToOriginalType[key] = zeroValue
 				fieldNameToOriginalType[camelKey] = zeroValue
@@ -99,6 +101,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				if !ok {
 					return true
 				}
+				log.Println(funcName)
 				castedReturn := ast.NewIdent(fmt.Sprintf("%s(%s)", castType, typeDefaultMap[funcName]))
 				returnStmt.Results[0] = castedReturn
 				replacement.Body.List[len(body)-1] = returnStmt
