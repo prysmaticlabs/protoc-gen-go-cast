@@ -80,6 +80,17 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				Type: funcDecl.Type,
 				Body: funcDecl.Body,
 			}
+			body := replacement.Body.List
+			if len(body) > 0 {
+				lastStmt :=  body[len(body)-1]
+				returnStmt, ok := lastStmt.(*ast.ReturnStmt)
+				if !ok {
+					return true
+				}
+				castedReturn := ast.NewIdent(fmt.Sprintf("%s(nil)", castType))
+				returnStmt.Results[0] = castedReturn
+				replacement.Body.List[len(body)-1] = returnStmt
+			}
 			replacement.Type.Results.List[0].Type = ast.NewIdent(castType)
 			c.Replace(replacement)
 			return true
