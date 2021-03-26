@@ -1,3 +1,4 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
@@ -18,7 +19,28 @@ go_proto_compiler(
     name = "go_cast",
     plugin = ":protoc-gen-go-cast",
     visibility = ["//visibility:public"],
-    deps = gen_well_known_types(),
+    deps = [
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//reflect/protoreflect:go_default_library",
+        "@org_golang_google_protobuf//runtime/protoimpl:go_default_library",
+    ],
+)
+
+go_proto_compiler(
+    name = "go_cast_grpc",
+    options = [
+        "plugins=grpc",
+    ],
+    plugin = ":protoc-gen-go-cast",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//codes:go_default_library",
+        "@org_golang_google_grpc//status:go_default_library",
+        "@org_golang_google_protobuf//reflect/protoreflect:go_default_library",
+        "@org_golang_google_protobuf//runtime/protoimpl:go_default_library",
+    ],
 )
 
 go_library(
@@ -44,6 +66,7 @@ go_binary(
     name = "protoc-gen-go-cast",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
+    deps = gen_well_known_types(),
 )
 
 proto_library(
@@ -59,6 +82,10 @@ go_proto_library(
     importpath = "github.com/prysmaticlabs/protoc-gen-go-cast/test",
     proto = ":test_proto",
     visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
+        "@org_golang_google_protobuf//types/descriptorpb:go_default_library",
+    ],
 )
 
 go_test(

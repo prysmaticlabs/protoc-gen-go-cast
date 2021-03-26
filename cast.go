@@ -41,6 +41,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				camelKey := strcase.ToCamel(key)
 				fieldNameToCastType[key] = importedType
 				fieldNameToCastType[camelKey] = importedType
+				fieldNameToCastType["Get" + field.GoName] = importedType
 			}
 
 			structTags, err := structTagsFromField(allExtensions, field)
@@ -66,6 +67,23 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 
 	postFunc :=  func(c *astutil.Cursor) bool {
 		n := c.Node()
+		funcDecl, funcOk := n.(*ast.FuncDecl)
+		if funcOk {
+			castType, castOk := fieldNameToCastType[funcDecl.Name.String()]
+			if !castOk {
+				return true
+			}
+			replacement := &ast.FuncDecl{
+				Doc:  funcDecl.Doc,
+				Recv: funcDecl.Recv,
+				Name: funcDecl.Name,
+				Type: funcDecl.Type,
+				Body: funcDecl.Body,
+			}
+			replacement.Type.Results.List[0].Type = ast.NewIdent(castType)
+			c.Replace(replacement)
+			return true
+		}
 		field, ok := n.(*ast.Field)
 		if !ok {
 			return true

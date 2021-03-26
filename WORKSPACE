@@ -3,19 +3,19 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 http_archive(
     name = "io_bazel_rules_go",
-    sha256 = "513c12397db1bc9aa46dd62f02dd94b49a9b5d17444d49b5a04c5a89f3053c1c",
+    sha256 = "7904dbecbaffd068651916dce77ff3437679f9d20e1a7956bff43826e7645fcc",
     urls = [
-        "https://storage.googleapis.com/bazel-mirror/github.com/bazelbuild/rules_go/releases/download/v0.19.5/rules_go-v0.19.5.tar.gz",
-        "https://github.com/bazelbuild/rules_go/releases/download/v0.19.5/rules_go-v0.19.5.tar.gz",
+        "https://storage.googleapis.com/bazel-mirror/github.com/bazelbuild/rules_go/releases/download/v0.25.1/rules_go-v0.25.1.tar.gz",
+        "https://github.com/bazelbuild/rules_go/releases/download/v0.25.1/rules_go-v0.25.1.tar.gz",
     ],
 )
 
 http_archive(
     name = "bazel_gazelle",
-    sha256 = "7fc87f4170011201b1690326e8c16c5d802836e3a0d617d8f75c3af2b23180c4",
+    sha256 = "222e49f034ca7a1d1231422cdb67066b885819885c356673cb1f72f748a3c9d4",
     urls = [
-        "https://storage.googleapis.com/bazel-mirror/github.com/bazelbuild/bazel-gazelle/releases/download/0.18.2/bazel-gazelle-0.18.2.tar.gz",
-        "https://github.com/bazelbuild/bazel-gazelle/releases/download/0.18.2/bazel-gazelle-0.18.2.tar.gz",
+        "https://storage.googleapis.com/bazel-mirror/github.com/bazelbuild/bazel-gazelle/releases/download/0.22.3/bazel-gazelle-0.22.3.tar.gz",
+        "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.22.3/bazel-gazelle-v0.22.3.tar.gz",
     ],
 )
 
@@ -23,22 +23,49 @@ load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_depe
 
 go_rules_dependencies()
 
-go_register_toolchains()
+http_archive(
+    name = "bazel_skylib",
+    sha256 = "1c531376ac7e5a180e0237938a2536de0c54d93f5c278634818e0efc952dd56c",
+    urls = [
+        "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
+    ],
+)
 
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
+load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 
-gazelle_dependencies()
+bazel_skylib_workspace()
 
 git_repository(
     name = "com_google_protobuf",
-    commit = "4cf5bfee9546101d98754d23ff378ff718ba8438",
+    commit = "4fff47a41811eeaef8add8def480062282292ce5",
     remote = "https://github.com/protocolbuffers/protobuf",
-    shallow_since = "1558721209 -0700",
+    shallow_since = "1605300819 -0800",
 )
 
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 
 protobuf_deps()
+
+go_register_toolchains(version = "1.15.5")
+
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
+
+go_repository(
+    name = "com_github_prysmaticlabs_go_bitfield",
+    importpath = "github.com/prysmaticlabs/go-bitfield",
+    sum = "h1:Ws/Of2yg9JTVV9n8lQGXAf1RDDNthAu3SvTj93HkHgM=",
+    version = "v0.0.0-20210108222456-8e92c3709aa0",
+)
+
+gazelle_dependencies()
+
+go_repository(
+    name = "com_github_prysmaticlabs_eth2_types",
+    importpath = "github.com/prysmaticlabs/eth2-types",
+    sum = "h1:b4WxLSz1KzkEdF/DPcog9gIKN9d9YAFgbZO1hqjNrW0=",
+    version = "v0.0.0-20210219172114-1da477c09a06",
+)
 
 go_repository(
     name = "co_honnef_go_tools",
@@ -211,8 +238,8 @@ go_repository(
 go_repository(
     name = "org_golang_x_sys",
     importpath = "golang.org/x/sys",
-    sum = "h1:+Nyd8tzPX9R7BWHguqsrbFdRx3WQ/1ib8I44HXV5yTA=",
-    version = "v0.0.0-20200930185726-fdedc70b468f",
+    sum = "h1:myAQVi0cGEoqQVR5POX+8RR2mrocKqNN1hmeMqhX27k=",
+    version = "v0.0.0-20210119212857-b64e53b001e4",
 )
 
 go_repository(
@@ -225,8 +252,8 @@ go_repository(
 go_repository(
     name = "org_golang_x_tools",
     importpath = "golang.org/x/tools",
-    sum = "h1:m/pavz5iHQjTS53xz7jWmXK6qZIJaGy7rQwODcna+cs=",
-    version = "v0.0.0-20201208002638-66f931576d67",
+    sum = "h1:po9/4sTYwZU9lPhi1tOrb4hCv3qrhiQ77LZfGa2OjwY=",
+    version = "v0.1.0",
 )
 
 go_repository(
@@ -239,8 +266,8 @@ go_repository(
 go_repository(
     name = "com_github_iancoleman_strcase",
     importpath = "github.com/iancoleman/strcase",
-    sum = "h1:gnomlvw9tnV3ITTAxzKSgTF+8kFWcU/f+TgttpXGz1U=",
-    version = "v0.1.2",
+    sum = "h1:dJBk1m2/qjL1twPLf68JND55vvivMupZ4wIzE8CTdBw=",
+    version = "v0.1.3",
 )
 
 go_repository(
