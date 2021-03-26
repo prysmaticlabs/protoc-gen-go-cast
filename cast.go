@@ -6,6 +6,7 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -21,6 +22,12 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	filename := file.GeneratedFilenamePrefix + ".pb.go"
 	newGennedFile := gen.NewGeneratedFile(filename, file.GoImportPath)
 
+	typeDefaultMap := map[string]string{
+		"uint64": "0",
+		"bytes": "nil",
+	}
+
+	fieldNameToOriginalType := make(map[string]string)
 	fieldNameToCastType := make(map[string]string)
 	fieldNameToStructTags := make(map[string]string)
 	var newImports []string
@@ -42,6 +49,11 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				fieldNameToCastType[key] = importedType
 				fieldNameToCastType[camelKey] = importedType
 				fieldNameToCastType["Get" + field.GoName] = importedType
+
+				zeroValue := typeDefaultMap[field.Desc.Kind().String()]
+				fieldNameToOriginalType[key] = zeroValue
+				fieldNameToOriginalType[camelKey] = zeroValue
+				fieldNameToOriginalType["Get" + field.GoName] = zeroValue
 			}
 
 			structTags, err := structTagsFromField(allExtensions, field)
@@ -69,7 +81,8 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 		n := c.Node()
 		funcDecl, funcOk := n.(*ast.FuncDecl)
 		if funcOk {
-			castType, castOk := fieldNameToCastType[funcDecl.Name.String()]
+			funcName := funcDecl.Name.String()
+			castType, castOk := fieldNameToCastType[funcName]
 			if !castOk {
 				return true
 			}
@@ -87,7 +100,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				if !ok {
 					return true
 				}
-				castedReturn := ast.NewIdent(fmt.Sprintf("%s(nil)", castType))
+				castedReturn := ast.NewIdent(fmt.Sprintf("%s(%s)", castType, typeDefaultMap[funcName]))
 				returnStmt.Results[0] = castedReturn
 				replacement.Body.List[len(body)-1] = returnStmt
 			}
