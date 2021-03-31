@@ -44,15 +44,17 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 
 				// Mark both keys in the case its modified in the resulting generation.
 				key := fmt.Sprintf("%s", field.Desc.Name())
+				kind := field.Desc.Kind().String()
 				camelKey := strcase.ToCamel(key)
+				zeroValue := typeDefaultMap[kind]
 				if field.Desc.IsList() {
+					zeroValue = "nil"
 					importedType = fmt.Sprintf("[]%s", importedType)
 				}
 				fieldNameToCastType[key] = importedType
 				fieldNameToCastType[camelKey] = importedType
 				fieldNameToCastType["Get" + field.GoName] = importedType
 
-				zeroValue := typeDefaultMap[field.Desc.Kind().String()]
 				fieldNameToOriginalType["Get" + field.GoName] = zeroValue
 			}
 
