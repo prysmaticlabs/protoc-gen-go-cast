@@ -53,7 +53,7 @@ message Deposit {
 message Attestation {
   // A bitfield representation of validator indices that have voted exactly
   // the same vote and have been aggregated into this attestation.
-  repeated bytes aggregation_bits = 1 [(ssz_max) = "2048", (cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitlist"];
+  bytes aggregation_bits = 1 [(ssz_max) = "2048", (cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitlist"];
 
   AttestationData data = 2;
 
@@ -93,20 +93,21 @@ message AttestationData {
   // 32 byte root of the LMD GHOST block vote.
   bytes beacon_block_root = 3 [(ssz_size) = "32"];
 
+
+  message Checkpoint {
+    // A checkpoint is every epoch's first slot. The goal of Casper FFG
+    // is to link the check points together for justification and finalization.
+
+    // Epoch the checkpoint references.
+    uint64 epoch = 1;
+
+    // Block root of the checkpoint references.
+    bytes root = 2 [(ssz_max) = "2048", (cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitlist"];
+  }
+
   // The most recent justified checkpoint in the beacon state
   Checkpoint source = 4;
 
   // The checkpoint attempting to be justified for the current epoch and its epoch boundary block
   Checkpoint target = 5;
-}
-
-message Checkpoint {
-  // A checkpoint is every epoch's first slot. The goal of Casper FFG
-  // is to link the check points together for justification and finalization.
-
-  // Epoch the checkpoint references.
-  uint64 epoch = 1;
-
-  // Block root of the checkpoint references.
-  bytes root = 2 [(ssz_size) = "32"];
 }

@@ -6,6 +6,7 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -30,46 +31,64 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	fieldNameToCastType := make(map[string]string)
 	fieldNameToStructTags := make(map[string]string)
 	var newImports []string
+	castify := func(castType string, field *protogen.Field) {
+		if castType != "" {
+			_, importedType := castTypeToGoType(castType)
+
+			// Mark both keys in the case its modified in the resulting generation.
+			key := fmt.Sprintf("%s", field.Desc.Name())
+			log.Println(key)
+			kind := field.Desc.Kind().String()
+			camelKey := strcase.ToCamel(key)
+			zeroValue := typeDefaultMap[kind]
+			if field.Desc.IsList() {
+				zeroValue = "nil"
+				importedType = fmt.Sprintf("[]%s", importedType)
+			}
+			fieldNameToCastType[key] = importedType
+			fieldNameToCastType[camelKey] = importedType
+			fieldNameToCastType["Get" + field.GoName] = importedType
+
+			fieldNameToOriginalType["Get" + field.GoName] = zeroValue
+		}
+
+		structTags, err := structTagsFromField(allExtensions, field)
+		if err != nil {
+			panic(err)
+		}
+		if structTags != "" {
+			// Mark both keys in the case its modified in the resulting generation.
+			key := fmt.Sprintf("%s", field.Desc.Name())
+			camelKey := strcase.ToCamel(key)
+			key = fmt.Sprintf("%s", field.Desc.Name())
+			camelKey = strcase.ToCamel(key)
+			fieldNameToStructTags[key] = structTags
+			fieldNameToStructTags[camelKey] = structTags
+		}
+	}
+
 	for _, message := range file.Messages {
 		for _, field := range message.Fields {
+			log.Printf("Field: %s\n", field.GoName)
 			castType, err := castTypeFromField(allExtensions, field)
 			if err != nil {
 				panic(err)
 			}
-			if castType != "" {
-				importPath, importedType := castTypeToGoType(castType)
-				if importPath != "" {
-					newImports = append(newImports, importPath)
-				}
-
-				// Mark both keys in the case its modified in the resulting generation.
-				key := fmt.Sprintf("%s", field.Desc.Name())
-				kind := field.Desc.Kind().String()
-				camelKey := strcase.ToCamel(key)
-				zeroValue := typeDefaultMap[kind]
-				if field.Desc.IsList() {
-					zeroValue = "nil"
-					importedType = fmt.Sprintf("[]%s", importedType)
-				}
-				fieldNameToCastType[key] = importedType
-				fieldNameToCastType[camelKey] = importedType
-				fieldNameToCastType["Get" + field.GoName] = importedType
-
-				fieldNameToOriginalType["Get" + field.GoName] = zeroValue
+			importPath, _ := castTypeToGoType(castType)
+			if importPath != "" {
+				newImports = append(newImports, importPath)
 			}
-
-			structTags, err := structTagsFromField(allExtensions, field)
-			if err != nil {
-				panic(err)
-			}
-			if structTags != "" {
-				// Mark both keys in the case its modified in the resulting generation.
-				key := fmt.Sprintf("%s", field.Desc.Name())
-				camelKey := strcase.ToCamel(key)
-				key = fmt.Sprintf("%s", field.Desc.Name())
-				camelKey = strcase.ToCamel(key)
-				fieldNameToStructTags[key] = structTags
-				fieldNameToStructTags[camelKey] = structTags
+			castify(castType, field)
+		}
+		for _, mm := range message.Messages {
+			log.Printf("Fields: %d\n", len(mm.Fields))
+			for _, ffield := range mm.Fields {
+				log.Printf("Field: %s\n", ffield.GoName)
+				nestedCastType, err := castTypeFromField(allExtensions, ffield)
+				if err != nil {
+					panic(err)
+				}
+				castify(nestedCastType, ffield)
 			}
 		}
 	}
