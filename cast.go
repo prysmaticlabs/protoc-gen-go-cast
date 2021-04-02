@@ -6,7 +6,6 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -37,7 +36,6 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 
 			// Mark both keys in the case its modified in the resulting generation.
 			key := fmt.Sprintf("%s", field.Desc.Name())
-			log.Println(key)
 			kind := field.Desc.Kind().String()
 			camelKey := strcase.ToCamel(key)
 			zeroValue := typeDefaultMap[kind]
@@ -69,7 +67,6 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 
 	for _, message := range file.Messages {
 		for _, field := range message.Fields {
-			log.Printf("Field: %s\n", field.GoName)
 			castType, err := castTypeFromField(allExtensions, field)
 			if err != nil {
 				panic(err)
@@ -81,9 +78,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 			castify(castType, field)
 		}
 		for _, mm := range message.Messages {
-			log.Printf("Fields: %d\n", len(mm.Fields))
 			for _, ffield := range mm.Fields {
-				log.Printf("Field: %s\n", ffield.GoName)
 				nestedCastType, err := castTypeFromField(allExtensions, ffield)
 				if err != nil {
 					panic(err)
