@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"google.golang.org/protobuf/compiler/protogen"
-
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
