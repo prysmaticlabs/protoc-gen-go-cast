@@ -17,6 +17,7 @@ extend google.protobuf.FieldOptions {
 service Greeter {
   // Sends a greeting
   rpc SayHello (HelloRequest) returns (HelloReply) {}
+  rpc ValidatorIndex(HelloRequest) returns (HelloReply) {}
 }
 
 // The request message containing the user's name.
@@ -102,7 +103,7 @@ message AttestationData {
     uint64 epoch = 1;
 
     // Block root of the checkpoint references.
-    bytes root = 2 [(ssz_max) = "2048", (cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitlist"];
+    bytes validator_index = 2 [(ssz_max) = "2048", (cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitlist"];
   }
 
   // The most recent justified checkpoint in the beacon state

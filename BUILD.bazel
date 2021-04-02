@@ -80,7 +80,7 @@ proto_library(
 
 go_proto_library(
     name = "test_go_proto",
-    compilers = [":go_cast"],
+    compilers = [":go_cast_grpc"],
     importpath = "github.com/prysmaticlabs/protoc-gen-go-cast/test",
     proto = ":test_proto",
     visibility = ["//visibility:public"],

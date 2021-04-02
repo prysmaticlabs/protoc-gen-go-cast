@@ -114,6 +114,9 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				Type: funcDecl.Type,
 				Body: funcDecl.Body,
 			}
+			if len(replacement.Recv.List) > 0 {
+				return true
+			}
 			body := replacement.Body.List
 			if len(body) > 0 {
 				lastStmt :=  body[len(body)-1]
@@ -133,6 +136,10 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 		if !ok {
 			return true
 		}
+		if field.Tag == nil {
+			return true
+		}
+
 		if len(field.Names)  == 0 {
 			return true
 		}
