@@ -114,7 +114,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				Type: funcDecl.Type,
 				Body: funcDecl.Body,
 			}
-			if len(replacement.Recv.List) > 0 {
+			if len(replacement.Type.Params.List) > 0 {
 				return true
 			}
 			body := replacement.Body.List
