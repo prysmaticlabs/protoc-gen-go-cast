@@ -32,9 +32,11 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	fieldNameToStructTags := make(map[string]string)
 	var newImports []string
 	castify := func(key string, castType string, field *protogen.Field) {
+		log.Printf("Prekey: %s\n", key)
 		camelKey := strcase.ToCamel(key)
 
 		if castType != "" {
+			//log.Printf("Prekey: %s\n", key)
 			_, importedType := castTypeToGoType(castType)
 
 			// Mark both keys in the case its modified in the resulting generation.
@@ -75,6 +77,16 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 			key := fmt.Sprintf("%s-%s", field.Parent.Desc.Name(), field.GoName)
 			castify(key, castType, field)
 		}
+		for _, oneof := range message.Oneofs {
+			for _, oneofField := range oneof.Fields {
+				key := fmt.Sprintf("%s_%s-%s", message.Desc.Name(), oneofField.GoName, oneofField.GoName)
+				castType, err := castTypeFromField(allExtensions, oneofField)
+				if err != nil {
+					panic(err)
+				}
+				castify(key, castType, oneofField)
+			}
+		}
 		for _, mm := range message.Messages {
 			for _, ffield := range mm.Fields {
 				nestedCastType, err := castTypeFromField(allExtensions, ffield)
@@ -83,6 +95,16 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				}
 				key := fmt.Sprintf("%s_%s-%s", ffield.Parent.Desc.Parent().Name(), ffield.Parent.Desc.Name(), ffield.GoName)
 				castify(key, nestedCastType, ffield)
+			}
+			for _, mm := range message.Messages {
+				for _, ffield := range mm.Fields {
+					nestedCastType, err := castTypeFromField(allExtensions, ffield)
+					if err != nil {
+						panic(err)
+					}
+					key := fmt.Sprintf("%s_%s-%s", ffield.Parent.Desc.Parent().Name(), ffield.Parent.Desc.Name(), ffield.GoName)
+					castify(key, nestedCastType, ffield)
+				}
 			}
 		}
 	}
@@ -125,6 +147,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 			}
 			c.Replace(replacement)
 		}
+
 		funcDecl, funcOk := n.(*ast.FuncDecl)
 		if funcOk {
 			funcName := funcDecl.Name.String()
