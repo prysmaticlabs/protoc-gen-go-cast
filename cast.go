@@ -32,7 +32,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	fieldNameToStructTags := make(map[string]string)
 	var newImports []string
 	castify := func(parentName string, key string, castType string, field *protogen.Field) {
-		log.Printf("Prekey: %s\n", key)
+		//log.Printf("Prekey: %s\n", key)
 		camelKey := strcase.ToCamel(key)
 
 		if castType != "" {
@@ -47,12 +47,14 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				importedType = fmt.Sprintf("[]%s", importedType)
 			}
 			functionKey := fmt.Sprintf("%s-%s", parentName, "Get" + field.GoName)
+			log.Printf("Pre funckey: %s\n", functionKey)
 			fieldNameToCastType[key] = importedType
 			fieldNameToCastType[camelKey] = importedType
 			fieldNameToCastType[functionKey] = importedType
 
 			fieldNameToOriginalType[functionKey] = zeroValue
 		}
+
 
 		structTags, err := structTagsFromField(allExtensions, field)
 		if err != nil {
@@ -157,6 +159,9 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 		funcDecl, funcOk := n.(*ast.FuncDecl)
 		if funcOk {
 			funcName := funcDecl.Name.String()
+			if !strings.Contains(funcName, "Get") {
+				return true
+			}
 			var receiverType string
 			if funcDecl.Recv != nil {
 				receiver := funcDecl.Recv.List[0]
@@ -165,11 +170,13 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 					receiverType = fmt.Sprintf("%s", x.X)
 				}
 			}
-			funcKey := fmt.Sprintf("%s-%s", receiverType+funcName)
+			funcKey := fmt.Sprintf("%s-%s", receiverType, funcName)
 			castType, castOk := fieldNameToCastType[funcKey]
 			if !castOk {
 				return true
 			}
+
+			log.Printf("Func casted: %s\n", funcKey)
 			replacement := &ast.FuncDecl{
 				Doc:  funcDecl.Doc,
 				Recv: funcDecl.Recv,
