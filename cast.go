@@ -6,7 +6,6 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -47,7 +46,6 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				importedType = fmt.Sprintf("[]%s", importedType)
 			}
 			functionKey := fmt.Sprintf("%s-%s", parentName, "Get" + field.GoName)
-			log.Printf("Pre funckey: %s\n", functionKey)
 			fieldNameToCastType[key] = importedType
 			fieldNameToCastType[camelKey] = importedType
 			fieldNameToCastType[functionKey] = importedType
@@ -137,7 +135,6 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 
 				key := fmt.Sprintf("%s-%s", decl.Name, field.Names[0].Name)
 				if castType, ok := fieldNameToCastType[key]; ok {
-					log.Printf("Field casted: %s\n", key)
 					replacementFields.List[i].Type = ast.NewIdent(castType)
 				}
 				if structTags, ok := fieldNameToStructTags[key]; ok {
@@ -162,6 +159,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 			if !strings.Contains(funcName, "Get") {
 				return true
 			}
+
 			var receiverType string
 			if funcDecl.Recv != nil {
 				receiver := funcDecl.Recv.List[0]
@@ -176,7 +174,6 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				return true
 			}
 
-			log.Printf("Func casted: %s\n", funcKey)
 			replacement := &ast.FuncDecl{
 				Doc:  funcDecl.Doc,
 				Recv: funcDecl.Recv,
