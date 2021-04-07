@@ -6,6 +6,7 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -30,14 +31,14 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	fieldNameToCastType := make(map[string]string)
 	fieldNameToStructTags := make(map[string]string)
 	var newImports []string
-	castify := func(castType string, field *protogen.Field) {
+	castify := func(key string, castType string, field *protogen.Field) {
+		camelKey := strcase.ToCamel(key)
+
 		if castType != "" {
 			_, importedType := castTypeToGoType(castType)
 
 			// Mark both keys in the case its modified in the resulting generation.
-			key := fmt.Sprintf("%s", field.Desc.Name())
 			kind := field.Desc.Kind().String()
-			camelKey := strcase.ToCamel(key)
 			zeroValue := typeDefaultMap[kind]
 			if field.Desc.IsList() {
 				zeroValue = "nil"
@@ -56,10 +57,6 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 		}
 		if structTags != "" {
 			// Mark both keys in the case its modified in the resulting generation.
-			key := fmt.Sprintf("%s", field.Desc.Name())
-			camelKey := strcase.ToCamel(key)
-			key = fmt.Sprintf("%s", field.Desc.Name())
-			camelKey = strcase.ToCamel(key)
 			fieldNameToStructTags[key] = structTags
 			fieldNameToStructTags[camelKey] = structTags
 		}
@@ -75,7 +72,8 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 			if importPath != "" {
 				newImports = append(newImports, importPath)
 			}
-			castify(castType, field)
+			key := fmt.Sprintf("%s-%s", field.Parent.Desc.Name(), field.GoName)
+			castify(key, castType, field)
 		}
 		for _, mm := range message.Messages {
 			for _, ffield := range mm.Fields {
@@ -83,11 +81,11 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				if err != nil {
 					panic(err)
 				}
-				castify(nestedCastType, ffield)
+				key := fmt.Sprintf("%s_%s-%s", ffield.Parent.Desc.Parent().Name(), ffield.Parent.Desc.Name(), ffield.GoName)
+				castify(key, nestedCastType, ffield)
 			}
 		}
 	}
-
 
 	preFunc := func(c *astutil.Cursor) bool {
 		return true
@@ -95,6 +93,38 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 
 	postFunc :=  func(c *astutil.Cursor) bool {
 		n := c.Node()
+		structType, structOk := n.(*ast.StructType)
+		if structOk {
+			replacementFields := structType.Fields
+			decl, ok := c.Parent().(*ast.TypeSpec)
+			if !ok {
+				return true
+			}
+			for i, field := range replacementFields.List {
+				if field.Tag == nil || len(field.Names)  == 0 {
+					continue
+				}
+
+				key := fmt.Sprintf("%s-%s", decl.Name, field.Names[0].Name)
+				if castType, ok := fieldNameToCastType[key]; ok {
+					log.Printf("Field casted: %s\n", key)
+					replacementFields.List[i].Type = ast.NewIdent(castType)
+				}
+				if structTags, ok := fieldNameToStructTags[key]; ok {
+					replacementFields.List[i].Tag = &ast.BasicLit{
+						Kind: token.STRING,
+						ValuePos: field.Tag.ValuePos,
+						Value: fmt.Sprintf("%s%s`", field.Tag.Value[:len(field.Tag.Value)-1], structTags),
+					}
+				}
+			}
+			replacement := &ast.StructType{
+				Struct: structType.Struct,
+				Fields: replacementFields,
+				Incomplete: structType.Incomplete,
+			}
+			c.Replace(replacement)
+		}
 		funcDecl, funcOk := n.(*ast.FuncDecl)
 		if funcOk {
 			funcName := funcDecl.Name.String()
@@ -127,36 +157,6 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 			c.Replace(replacement)
 			return true
 		}
-		field, ok := n.(*ast.Field)
-		if !ok {
-			return true
-		}
-		if field.Tag == nil {
-			return true
-		}
-
-		if len(field.Names)  == 0 {
-			return true
-		}
-		replacement := &ast.Field{
-			Doc: field.Doc,
-			Names: field.Names,
-			Type: field.Type,
-			Tag: field.Tag,
-			Comment: field.Comment,
-		}
-		name := field.Names[0].Name
-		if castType, ok := fieldNameToCastType[name]; ok {
-			replacement.Type = ast.NewIdent(castType)
-		}
-		if structTags, ok := fieldNameToStructTags[name]; ok {
-			replacement.Tag = &ast.BasicLit{
-				Kind: token.STRING,
-				ValuePos: field.Tag.ValuePos,
-				Value: fmt.Sprintf("%s%s`", field.Tag.Value[:len(field.Tag.Value)-1], structTags),
-			}
-		}
-		c.Replace(replacement)
 		return true
 	}
 
