@@ -31,7 +31,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	fieldNameToCastType := make(map[string]string)
 	fieldNameToStructTags := make(map[string]string)
 	var newImports []string
-	castify := func(key string, castType string, field *protogen.Field) {
+	castify := func(parentName string, key string, castType string, field *protogen.Field) {
 		log.Printf("Prekey: %s\n", key)
 		camelKey := strcase.ToCamel(key)
 
@@ -46,11 +46,12 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				zeroValue = "nil"
 				importedType = fmt.Sprintf("[]%s", importedType)
 			}
+			functionKey := fmt.Sprintf("%s-%s", parentName, "Get" + field.GoName)
 			fieldNameToCastType[key] = importedType
 			fieldNameToCastType[camelKey] = importedType
-			fieldNameToCastType["Get" + field.GoName] = importedType
+			fieldNameToCastType[functionKey] = importedType
 
-			fieldNameToOriginalType["Get" + field.GoName] = zeroValue
+			fieldNameToOriginalType[functionKey] = zeroValue
 		}
 
 		structTags, err := structTagsFromField(allExtensions, field)
@@ -75,16 +76,18 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				newImports = append(newImports, importPath)
 			}
 			key := fmt.Sprintf("%s-%s", field.Parent.Desc.Name(), field.GoName)
-			castify(key, castType, field)
+			receiverName := string(field.Parent.Desc.Name())
+			castify(receiverName, key, castType, field)
 		}
 		for _, oneof := range message.Oneofs {
 			for _, oneofField := range oneof.Fields {
-				key := fmt.Sprintf("%s_%s-%s", message.Desc.Name(), oneofField.GoName, oneofField.GoName)
 				castType, err := castTypeFromField(allExtensions, oneofField)
 				if err != nil {
 					panic(err)
 				}
-				castify(key, castType, oneofField)
+				parentName := fmt.Sprintf("%s_%s", message.Desc.Name(), oneofField.GoName)
+				key := fmt.Sprintf("%s-%s", parentName, oneofField.GoName)
+				castify(parentName, key, castType, oneofField)
 			}
 		}
 		for _, mm := range message.Messages {
@@ -93,8 +96,10 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				if err != nil {
 					panic(err)
 				}
-				key := fmt.Sprintf("%s_%s-%s", ffield.Parent.Desc.Parent().Name(), ffield.Parent.Desc.Name(), ffield.GoName)
-				castify(key, nestedCastType, ffield)
+
+				parentName := fmt.Sprintf("%s_%s", ffield.Parent.Desc.Parent().Name(), ffield.Parent.Desc.Name())
+				key := fmt.Sprintf("%s-%s", parentName, ffield.GoName)
+				castify(parentName, key, nestedCastType, ffield)
 			}
 			for _, mm := range message.Messages {
 				for _, ffield := range mm.Fields {
@@ -102,8 +107,9 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 					if err != nil {
 						panic(err)
 					}
-					key := fmt.Sprintf("%s_%s-%s", ffield.Parent.Desc.Parent().Name(), ffield.Parent.Desc.Name(), ffield.GoName)
-					castify(key, nestedCastType, ffield)
+					parentName := fmt.Sprintf("%s_%s", ffield.Parent.Desc.Parent().Name(), ffield.Parent.Desc.Name())
+					key := fmt.Sprintf("%s-%s", parentName, ffield.GoName)
+					castify(parentName, key, nestedCastType, ffield)
 				}
 			}
 		}
@@ -151,7 +157,16 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 		funcDecl, funcOk := n.(*ast.FuncDecl)
 		if funcOk {
 			funcName := funcDecl.Name.String()
-			castType, castOk := fieldNameToCastType[funcName]
+			var receiverType string
+			if funcDecl.Recv != nil {
+				receiver := funcDecl.Recv.List[0]
+				x, ok := receiver.Type.(*ast.StarExpr)
+				if ok {
+					receiverType = fmt.Sprintf("%s", x.X)
+				}
+			}
+			funcKey := fmt.Sprintf("%s-%s", receiverType+funcName)
+			castType, castOk := fieldNameToCastType[funcKey]
 			if !castOk {
 				return true
 			}
@@ -172,7 +187,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				if !ok {
 					return true
 				}
-				castedReturn := ast.NewIdent(fmt.Sprintf("%s(%s)", castType, fieldNameToOriginalType[funcName]))
+				castedReturn := ast.NewIdent(fmt.Sprintf("%s(%s)", castType, fieldNameToOriginalType[funcKey]))
 				returnStmt.Results[0] = castedReturn
 				replacement.Body.List[len(body)-1] = returnStmt
 			}
