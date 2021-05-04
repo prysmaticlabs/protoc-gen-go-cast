@@ -44,6 +44,8 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 			if field.Desc.IsList() {
 				zeroValue = "nil"
 				importedType = fmt.Sprintf("[]%s", importedType)
+			} else if field.Desc.HasOptionalKeyword() {
+				importedType = fmt.Sprintf("*%s", importedType)
 			}
 			functionKey := fmt.Sprintf("%s-%s", parentName, "Get" + field.GoName)
 			fieldNameToCastType[key] = importedType
@@ -191,11 +193,12 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				if !ok {
 					return true
 				}
-				castedReturn := ast.NewIdent(fmt.Sprintf("%s(%s)", castType, fieldNameToOriginalType[funcKey]))
+				newReturn := fmt.Sprintf("%s(%s)", castType, fieldNameToOriginalType[funcKey])
+				castedReturn := ast.NewIdent(strings.Replace(newReturn, "*", "", -1))
 				returnStmt.Results[0] = castedReturn
 				replacement.Body.List[len(body)-1] = returnStmt
 			}
-			replacement.Type.Results.List[0].Type = ast.NewIdent(castType)
+			replacement.Type.Results.List[0].Type = ast.NewIdent(strings.Replace(castType, "*", "", -1))
 			c.Replace(replacement)
 			return true
 		}

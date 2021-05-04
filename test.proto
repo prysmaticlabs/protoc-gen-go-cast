@@ -100,7 +100,7 @@ message AttestationData {
     // is to link the check points together for justification and finalization.
 
     // Epoch the checkpoint references.
-    uint64 epoch = 1;
+    optional uint64 epoch = 1;
 
     // Block root of the checkpoint references.
     bytes validator_index = 2 [(ssz_max) = "2048", (cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitlist"];
@@ -119,7 +119,7 @@ message RealCheckpoint {
   // is to link the check points together for justification and finalization.
 
   // Epoch the checkpoint references.
-  uint64 epoch = 1;
+  optional uint64 epoch = 1;
 
   // Block root of the checkpoint references.
   bytes validator_index = 2;
