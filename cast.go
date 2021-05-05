@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"golang.org/x/tools/go/ast/astutil"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -31,11 +30,9 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	fieldNameToStructTags := make(map[string]string)
 	var newImports []string
 	castify := func(parentName string, key string, castType string, field *protogen.Field) {
-		//log.Printf("Prekey: %s\n", key)
-		camelKey := strcase.ToCamel(key)
+		camelKey := toCamelInitCase(key, true)
 
 		if castType != "" {
-			//log.Printf("Prekey: %s\n", key)
 			_, importedType := castTypeToGoType(castType)
 
 			// Mark both keys in the case its modified in the resulting generation.
@@ -294,4 +291,41 @@ func namedImport(importPath string) string {
 func snakeToCamel(text string) string {
 	newText := strings.ReplaceAll(text, "_", "-")
 	return newText
+}
+
+// Converts a string to CamelCase
+func toCamelInitCase(s string, initCase bool) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return s
+	}
+
+	n := strings.Builder{}
+	n.Grow(len(s))
+	capNext := initCase
+	for i, v := range []byte(s) {
+		vIsCap := v >= 'A' && v <= 'Z'
+		vIsLow := v >= 'a' && v <= 'z'
+		if capNext {
+			if vIsLow {
+				v += 'A'
+				v -= 'a'
+			}
+		} else if i == 0 {
+			if vIsCap {
+				v += 'a'
+				v -= 'A'
+			}
+		}
+		if vIsCap || vIsLow {
+			n.WriteByte(v)
+			capNext = false
+		} else if vIsNum := v >= '0' && v <= '9'; vIsNum {
+			n.WriteByte(v)
+			capNext = true
+		} else {
+			capNext = v == '_' || v == ' ' || v == '-' || v == '.'
+		}
+	}
+	return n.String()
 }
