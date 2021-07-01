@@ -42,11 +42,11 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 			kindName := kind.String()
 
 			if kind == protoreflect.BytesKind {
-				castType, err := castTypeFromField(allExtensions, field)
+				t, err := castTypeFromField(allExtensions, field)
 				if err != nil {
 					panic(err)
 				}
-				if castType != "" {
+				if t != "" {
 					kindName = "array"
 				}
 			}
