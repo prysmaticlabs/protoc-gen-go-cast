@@ -36,6 +36,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 		camelKey := toCamelInitCase(key, true)
 
 		if castType != "" {
+			var customTypeName string
 			_, importedType := castTypeToGoType(castType)
 
 			// Mark both keys in the case its modified in the resulting generation.
@@ -43,20 +44,24 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 			kindName := kind.String()
 
 			if kind == protoreflect.BytesKind {
-				t, err := castTypeFromField(allExtensions, field)
+				fullTypeName, err := castTypeFromField(allExtensions, field)
 				if err != nil {
 					panic(err)
 				}
-				if t != "" {
-					log.Default().Printf("type: '%s'", t)
+				if strings.Contains(fullTypeName, "eth2-types"){
 					kindName = "array"
+
+					// We extract the name of the custom type without the package prefix.
+					customTypeName =  fullTypeName[strings.LastIndex(fullTypeName, ".")+1:]
+					if customTypeName == "Domain" {
+						log.Default().Printf("Type: '%s", customTypeName)
+					}
 				}
 			}
 
 			zeroValue := typeDefaultMap[kindName]
 			if kindName == "array" {
-				// We extract the name of the custom type without the package prefix.
-				switch kindName[strings.LastIndex(kindName, ".")+1:] {
+				switch customTypeName {
 				case "Domain":
 					{
 						zeroValue = strings.Replace(zeroValue, "__size__", "32", 1)
