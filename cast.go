@@ -12,6 +12,7 @@ import (
 
 	"golang.org/x/tools/go/ast/astutil"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -22,7 +23,8 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 
 	typeDefaultMap := map[string]string{
 		"uint64": "0",
-		"bytes": "nil",
+		"bytes":  "nil",
+		"array":  "*new(([__size__]byte))", // __size__ is a placeholder for the actual size
 	}
 
 	fieldNameToOriginalType := make(map[string]string)
@@ -36,22 +38,43 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 			_, importedType := castTypeToGoType(castType)
 
 			// Mark both keys in the case its modified in the resulting generation.
-			kind := field.Desc.Kind().String()
-			zeroValue := typeDefaultMap[kind]
+			kind := field.Desc.Kind()
+			kindName := kind.String()
+
+			if kind == protoreflect.BytesKind {
+				castType, err := castTypeFromField(allExtensions, field)
+				if err != nil {
+					panic(err)
+				}
+				if castType != "" {
+					kindName = "array"
+				}
+			}
+
+			zeroValue := typeDefaultMap[kindName]
+			if kindName == "array" {
+				// We extract the name of the custom type without the package prefix.
+				switch kindName[strings.LastIndex(kindName, ".")+1:] {
+				case "Domain":
+					{
+						zeroValue = strings.Replace(typeDefaultMap[kindName], "__size__", "32", 1)
+					}
+				}
+			}
+
 			if field.Desc.IsList() {
 				zeroValue = "nil"
 				importedType = fmt.Sprintf("[]%s", importedType)
 			} else if field.Desc.HasOptionalKeyword() {
 				importedType = fmt.Sprintf("*%s", importedType)
 			}
-			functionKey := fmt.Sprintf("%s-%s", parentName, "Get" + field.GoName)
+			functionKey := fmt.Sprintf("%s-%s", parentName, "Get"+field.GoName)
 			fieldNameToCastType[key] = importedType
 			fieldNameToCastType[camelKey] = importedType
 			fieldNameToCastType[functionKey] = importedType
 
 			fieldNameToOriginalType[functionKey] = zeroValue
 		}
-
 
 		structTags, err := structTagsFromField(allExtensions, field)
 		if err != nil {
@@ -118,7 +141,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 		return true
 	}
 
-	postFunc :=  func(c *astutil.Cursor) bool {
+	postFunc := func(c *astutil.Cursor) bool {
 		n := c.Node()
 		structType, structOk := n.(*ast.StructType)
 		if structOk {
@@ -128,7 +151,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				return true
 			}
 			for i, field := range replacementFields.List {
-				if field.Tag == nil || len(field.Names)  == 0 {
+				if field.Tag == nil || len(field.Names) == 0 {
 					continue
 				}
 
@@ -138,15 +161,15 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				}
 				if structTags, ok := fieldNameToStructTags[key]; ok {
 					replacementFields.List[i].Tag = &ast.BasicLit{
-						Kind: token.STRING,
+						Kind:     token.STRING,
 						ValuePos: field.Tag.ValuePos,
-						Value: fmt.Sprintf("%s%s`", field.Tag.Value[:len(field.Tag.Value)-1], structTags),
+						Value:    fmt.Sprintf("%s%s`", field.Tag.Value[:len(field.Tag.Value)-1], structTags),
 					}
 				}
 			}
 			replacement := &ast.StructType{
-				Struct: structType.Struct,
-				Fields: replacementFields,
+				Struct:     structType.Struct,
+				Fields:     replacementFields,
 				Incomplete: structType.Incomplete,
 			}
 			c.Replace(replacement)
@@ -185,7 +208,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 			}
 			body := replacement.Body.List
 			if len(body) > 0 {
-				lastStmt :=  body[len(body)-1]
+				lastStmt := body[len(body)-1]
 				returnStmt, ok := lastStmt.(*ast.ReturnStmt)
 				if !ok {
 					return true
@@ -207,7 +230,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 		panic(err)
 	}
 	fset := token.NewFileSet()
-	astFile, err := parser.ParseFile(fset, "",bytes, parser.ParseComments)
+	astFile, err := parser.ParseFile(fset, "", bytes, parser.ParseComments)
 	if err != nil {
 		panic(err)
 	}
