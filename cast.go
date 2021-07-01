@@ -6,6 +6,7 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -47,6 +48,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 					panic(err)
 				}
 				if t != "" {
+					log.Default().Printf("type: '%s'", t)
 					kindName = "array"
 				}
 			}
