@@ -57,7 +57,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				switch kindName[strings.LastIndex(kindName, ".")+1:] {
 				case "Domain":
 					{
-						zeroValue = strings.Replace(typeDefaultMap[kindName], "__size__", "32", 1)
+						zeroValue = strings.Replace(zeroValue, "__size__", "32", 1)
 					}
 				}
 			}
