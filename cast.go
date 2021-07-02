@@ -6,7 +6,6 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -219,21 +218,15 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 					return true
 				}
 				newReturn := fmt.Sprintf("%s(%s)", castType, fieldNameToOriginalType[funcKey])
-				log.Printf("Cast type: %s", castType)
-				if kindName != "array" {
+				if castType != "github_com_prysmaticlabs_eth2_types.Domain" {
 					newReturn = strings.Replace(newReturn, "*", "", -1)
-				} else {
-					log.Printf("Not replacing")
 				}
 				castedReturn := ast.NewIdent(newReturn)
 				returnStmt.Results[0] = castedReturn
 				replacement.Body.List[len(body)-1] = returnStmt
 			}
-			if kindName != "array" {
+			if castType != "github_com_prysmaticlabs_eth2_types.Domain" {
 				castType = strings.Replace(castType, "*", "", -1)
-			} else {
-
-				log.Printf("Not replacing")
 			}
 			replacement.Type.Results.List[0].Type = ast.NewIdent(castType)
 			c.Replace(replacement)
