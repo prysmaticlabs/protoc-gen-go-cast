@@ -32,6 +32,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	fieldNameToCastType := make(map[string]string)
 	fieldNameToStructTags := make(map[string]string)
 	var newImports []string
+	var kindName string
 	castify := func(parentName string, key string, castType string, field *protogen.Field) {
 		camelKey := toCamelInitCase(key, true)
 
@@ -41,8 +42,9 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 
 			// Mark both keys in the case its modified in the resulting generation.
 			kind := field.Desc.Kind()
-			kindName := kind.String()
+			kindName = kind.String()
 
+			// TODO: Extract to function and maybe write test
 			if kind == protoreflect.BytesKind {
 				fullTypeName, err := castTypeFromField(allExtensions, field)
 				if err != nil {
@@ -221,11 +223,17 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 					return true
 				}
 				newReturn := fmt.Sprintf("%s(%s)", castType, fieldNameToOriginalType[funcKey])
-				castedReturn := ast.NewIdent(strings.Replace(newReturn, "*", "", -1))
+				if kindName != "array" {
+					newReturn = strings.Replace(newReturn, "*", "", -1)
+				}
+				castedReturn := ast.NewIdent(newReturn)
 				returnStmt.Results[0] = castedReturn
 				replacement.Body.List[len(body)-1] = returnStmt
 			}
-			replacement.Type.Results.List[0].Type = ast.NewIdent(strings.Replace(castType, "*", "", -1))
+			if kindName != "array" {
+				castType = strings.Replace(castType, "*", "", -1)
+			}
+			replacement.Type.Results.List[0].Type = ast.NewIdent(castType)
 			c.Replace(replacement)
 			return true
 		}
