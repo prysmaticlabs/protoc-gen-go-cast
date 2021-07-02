@@ -52,12 +52,8 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				}
 				if strings.Contains(fullTypeName, "eth2-types"){
 					kindName = "array"
-
 					// We extract the name of the custom type without the package prefix.
 					customTypeName =  fullTypeName[strings.LastIndex(fullTypeName, ".")+1:]
-					if customTypeName == "Domain" {
-						log.Default().Printf("Type: '%s", customTypeName)
-					}
 				}
 			}
 
@@ -223,6 +219,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 					return true
 				}
 				newReturn := fmt.Sprintf("%s(%s)", castType, fieldNameToOriginalType[funcKey])
+				log.Printf("Cast type: %s", castType)
 				if kindName != "array" {
 					newReturn = strings.Replace(newReturn, "*", "", -1)
 				} else {
