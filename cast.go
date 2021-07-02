@@ -224,16 +224,19 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				}
 				newReturn := fmt.Sprintf("%s(%s)", castType, fieldNameToOriginalType[funcKey])
 				if kindName != "array" {
-					log.Printf("Not replacing")
 					newReturn = strings.Replace(newReturn, "*", "", -1)
+				} else {
+					log.Printf("Not replacing")
 				}
 				castedReturn := ast.NewIdent(newReturn)
 				returnStmt.Results[0] = castedReturn
 				replacement.Body.List[len(body)-1] = returnStmt
 			}
 			if kindName != "array" {
-				log.Printf("Not replacing")
 				castType = strings.Replace(castType, "*", "", -1)
+			} else {
+
+				log.Printf("Not replacing")
 			}
 			replacement.Type.Results.List[0].Type = ast.NewIdent(castType)
 			c.Replace(replacement)
