@@ -8,7 +8,7 @@ load(
 )
 load(
     "@io_bazel_rules_go//proto/wkt:well_known_types.bzl",
-    "gen_well_known_types",
+    "WELL_KNOWN_TYPES_APIV2",
 )
 load("@bazel_gazelle//:def.bzl", "gazelle")
 
@@ -67,7 +67,7 @@ go_binary(
     name = "protoc-gen-go-cast",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
-    deps = gen_well_known_types(),
+    deps = WELL_KNOWN_TYPES_APIV2,
 )
 
 proto_library(
