@@ -218,11 +218,17 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 					return true
 				}
 				newReturn := fmt.Sprintf("%s(%s)", castType, fieldNameToOriginalType[funcKey])
-				castedReturn := ast.NewIdent(strings.Replace(newReturn, "*", "", -1))
+				if castType != "github_com_prysmaticlabs_prysm_beacon-chain_state_custom-types.Byte32" {
+					newReturn = strings.Replace(newReturn, "*", "", -1)
+				}
+				castedReturn := ast.NewIdent(newReturn)
 				returnStmt.Results[0] = castedReturn
 				replacement.Body.List[len(body)-1] = returnStmt
 			}
-			replacement.Type.Results.List[0].Type = ast.NewIdent(strings.Replace(castType, "*", "", -1))
+			if castType != "github_com_prysmaticlabs_prysm_beacon-chain_state_custom-types.Byte32" {
+				castType = strings.Replace(castType, "*", "", -1)
+			}
+			replacement.Type.Results.List[0].Type = ast.NewIdent(castType)
 			c.Replace(replacement)
 			return true
 		}
