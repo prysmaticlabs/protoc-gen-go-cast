@@ -24,7 +24,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	typeDefaultMap := map[string]string{
 		"uint64": "0",
 		"bytes":  "nil",
-		"array":  "*new(([__size__]byte))", // __size__ is a placeholder for the actual size
+		"array":  "*[__size__]byte{}", // __size__ is a placeholder for the actual size
 	}
 
 	fieldNameToOriginalType := make(map[string]string)
