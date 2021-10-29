@@ -49,7 +49,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				if err != nil {
 					panic(err)
 				}
-				if strings.Contains(fullTypeName, "eth2-types"){
+				if strings.Contains(fullTypeName, "custom-types"){
 					kindName = "array"
 					// We extract the name of the custom type without the package prefix.
 					customTypeName =  fullTypeName[strings.LastIndex(fullTypeName, ".")+1:]
@@ -59,7 +59,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 			zeroValue := typeDefaultMap[kindName]
 			if kindName == "array" {
 				switch customTypeName {
-				case "Domain":
+				case "Byte32":
 					{
 						zeroValue = strings.Replace(zeroValue, "__size__", "32", 1)
 					}
