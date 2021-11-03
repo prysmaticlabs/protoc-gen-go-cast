@@ -53,7 +53,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 					kindName = "array1d"
 					// We extract the name of the custom type without the package prefix.
 					customTypeName =  fullTypeName[strings.LastIndex(fullTypeName, ".")+1:]
-				} else if strings.Contains(fullTypeName, "custom-types.StateRoots") {
+				} else {
 					kindName = "array2d"
 					// We extract the name of the custom type without the package prefix.
 					customTypeName =  fullTypeName[strings.LastIndex(fullTypeName, ".")+1:]
