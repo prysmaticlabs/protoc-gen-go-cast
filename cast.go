@@ -217,7 +217,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 					return true
 				}
 				var newReturn string
-				if strings.Contains(castType, "custom-types.StateRoots") {
+				if strings.Contains(castType, "StateRoots") {
 					newReturn = fmt.Sprintf("*%s(%s)", castType, fieldNameToOriginalType[funcKey])
 				} else {
 					newReturn = fmt.Sprintf("%s(%s)", castType, fieldNameToOriginalType[funcKey])
@@ -309,7 +309,7 @@ func castTypeToGoType(castType string) (string, string) {
 	}
 	importPath := castType[:typeStartIdx]
 	importedType := castType[typeStartIdx+1:]
-	if strings.Contains(castType, "custom-types.StateRoots") {
+	if strings.Contains(castType, "StateRoots") {
 		return importPath, fmt.Sprintf("*%s.%s", namedImport(importPath), importedType)
 	}
 	return importPath, fmt.Sprintf("%s.%s", namedImport(importPath), importedType)
