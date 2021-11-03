@@ -48,6 +48,9 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				if err != nil {
 					panic(err)
 				}
+				if strings.Contains(fullTypeName, "custom-types.StateRoots"){
+					fullTypeName = "*"+fullTypeName
+				}
 				if strings.Contains(fullTypeName, "custom-types.Byte32"){
 					kindName = "array"
 					// We extract the name of the custom type without the package prefix.
