@@ -216,19 +216,22 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				if !ok {
 					return true
 				}
-				var newReturn string
+				newReturn := fmt.Sprintf("%s(%s)", castType, fieldNameToOriginalType[funcKey])
 				var castedReturn *ast.Ident
 				if strings.Contains(castType, "StateRoots") {
 					newReturn = fmt.Sprintf("(*%s)(%s)", castType, fieldNameToOriginalType[funcKey])
-					castedReturn = ast.NewIdent(newReturn)
+					castedReturn = ast.NewIdent(strings.Replace(newReturn, "*", "", 1))
 				} else {
-					newReturn = fmt.Sprintf("%s(%s)", castType, fieldNameToOriginalType[funcKey])
 					castedReturn = ast.NewIdent(strings.Replace(newReturn, "*", "", -1))
 				}
 				returnStmt.Results[0] = castedReturn
 				replacement.Body.List[len(body)-1] = returnStmt
 			}
-			replacement.Type.Results.List[0].Type = ast.NewIdent(strings.Replace(castType, "*", "", -1))
+			if strings.Contains(castType, "StateRoots") {
+				replacement.Type.Results.List[0].Type = ast.NewIdent(castType)
+			} else {
+				replacement.Type.Results.List[0].Type = ast.NewIdent(strings.Replace(castType, "*", "", -1))
+			}
 			c.Replace(replacement)
 			return true
 		}
