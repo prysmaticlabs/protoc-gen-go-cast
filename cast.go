@@ -24,8 +24,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 	typeDefaultMap := map[string]string{
 		"uint64": "0",
 		"bytes":  "nil",
-		"array1d":  "[__size__]byte{}", // __size__ is a placeholder for the actual size
-		"array2d":  "[__size2d__][__size1d__]byte{}", // __sizeX__ is a placeholder for the actual size
+		"array":  "*[__size__]byte{}", // __size__ is a placeholder for the actual size
 	}
 
 	fieldNameToOriginalType := make(map[string]string)
@@ -44,37 +43,25 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 			kind := field.Desc.Kind()
 			kindName = kind.String()
 
+			// TODO: Extract to function and maybe write test
 			if kind == protoreflect.BytesKind {
 				fullTypeName, err := castTypeFromField(allExtensions, field)
 				if err != nil {
 					panic(err)
 				}
-				if strings.Contains(fullTypeName, "custom-types.Byte32"){
-					kindName = "array1d"
-					// We extract the name of the custom type without the package prefix.
-					customTypeName =  fullTypeName[strings.LastIndex(fullTypeName, ".")+1:]
-				} else {
-					kindName = "array2d"
+				if strings.Contains(fullTypeName, "custom-types"){
+					kindName = "array"
 					// We extract the name of the custom type without the package prefix.
 					customTypeName =  fullTypeName[strings.LastIndex(fullTypeName, ".")+1:]
 				}
 			}
 
 			zeroValue := typeDefaultMap[kindName]
-			if kindName == "array1d" {
+			if kindName == "array" {
 				switch customTypeName {
 				case "Byte32":
 					{
 						zeroValue = strings.Replace(zeroValue, "__size__", "32", 1)
-					}
-				}
-			}
-			if kindName == "array2d" {
-				switch customTypeName {
-				case "StateRoots":
-					{
-						zeroValue = strings.Replace(zeroValue, "__size2d__", "8192", 1)
-						zeroValue = strings.Replace(zeroValue, "__size1d__", "32", 1)
 					}
 				}
 			}
