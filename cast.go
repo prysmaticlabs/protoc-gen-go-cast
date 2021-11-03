@@ -48,9 +48,6 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				if err != nil {
 					panic(err)
 				}
-				if strings.Contains(fullTypeName, "custom-types.StateRoots"){
-					fullTypeName = "*"+fullTypeName
-				}
 				if strings.Contains(fullTypeName, "custom-types.Byte32"){
 					kindName = "array"
 					// We extract the name of the custom type without the package prefix.
@@ -307,6 +304,9 @@ func castTypeToGoType(castType string) (string, string) {
 	}
 	importPath := castType[:typeStartIdx]
 	importedType := castType[typeStartIdx+1:]
+	if strings.Contains(castType, "custom-types.StateRoots") {
+		return importPath, fmt.Sprintf("*%s.%s", namedImport(importPath), importedType)
+	}
 	return importPath, fmt.Sprintf("%s.%s", namedImport(importPath), importedType)
 }
 
