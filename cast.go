@@ -218,7 +218,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				}
 				newReturn := fmt.Sprintf("%s(%s)", castType, fieldNameToOriginalType[funcKey])
 				var castedReturn *ast.Ident
-				if strings.Contains(castType, "StateRoots") {
+				if strings.Contains(castType, "StateRoots") || strings.Contains(castType, "RandaoMixes") {
 					newReturn = fmt.Sprintf("(*%s)(%s)", castType, fieldNameToOriginalType[funcKey])
 					castedReturn = ast.NewIdent(strings.Replace(newReturn, "*", "", 1))
 				} else {
@@ -227,7 +227,7 @@ func GenerateCastedFile(gen *protogen.Plugin, gennedFile *protogen.GeneratedFile
 				returnStmt.Results[0] = castedReturn
 				replacement.Body.List[len(body)-1] = returnStmt
 			}
-			if strings.Contains(castType, "StateRoots") {
+			if strings.Contains(castType, "StateRoots") || strings.Contains(castType, "RandaoMixes") {
 				replacement.Type.Results.List[0].Type = ast.NewIdent(castType)
 			} else {
 				replacement.Type.Results.List[0].Type = ast.NewIdent(strings.Replace(castType, "*", "", -1))
@@ -314,7 +314,7 @@ func castTypeToGoType(castType string) (string, string) {
 	}
 	importPath := castType[:typeStartIdx]
 	importedType := castType[typeStartIdx+1:]
-	if strings.Contains(castType, "StateRoots") {
+	if strings.Contains(castType, "StateRoots") || strings.Contains(castType, "RandaoMixes") {
 		return importPath, fmt.Sprintf("*%s.%s", namedImport(importPath), importedType)
 	}
 	return importPath, fmt.Sprintf("%s.%s", namedImport(importPath), importedType)
