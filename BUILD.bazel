@@ -30,6 +30,7 @@ go_proto_compiler(
     name = "go_cast_grpc",
     options = [
         "plugins=grpc",
+	    "silent=true",
     ],
     plugin = ":protoc-gen-go-cast",
     visibility = ["//visibility:public"],
