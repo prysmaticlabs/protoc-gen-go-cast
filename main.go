@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -22,6 +23,7 @@ func main() {
 		flags        flag.FlagSet
 		plugins      = flags.String("plugins", "", "list of plugins to enable (supported values: grpc)")
 		importPrefix = flags.String("import_prefix", "", "prefix to prepend to import paths")
+		silent       = flags.Bool("silent", false, "silence the output")
 	)
 	importRewriteFunc := func(importPath protogen.GoImportPath) protogen.GoImportPath {
 		switch importPath {
@@ -34,9 +36,12 @@ func main() {
 		return importPath
 	}
 	protogen.Options{
-		ParamFunc: flags.Set,
+		ParamFunc:         flags.Set,
 		ImportRewriteFunc: importRewriteFunc,
 	}.Run(func(gen *protogen.Plugin) error {
+		if *silent {
+			log.SetOutput(io.Discard)
+		}
 		grpc := false
 		for _, plugin := range strings.Split(*plugins, ",") {
 			log.Println(plugin)
